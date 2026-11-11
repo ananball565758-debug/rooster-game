@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Rooster Fight Arena - Fixed</title>
+    <title>Rooster Fight Arena - Fixed Spawn</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
@@ -349,7 +349,7 @@
             constructor(id, x, color, facingRight, isBot = false) {
                 this.id = id;
                 this.x = x;
-                this.y = GROUND_Y;
+                this.y = GROUND_Y; // เริ่มต้นที่พื้นเวที
                 this.targetX = x;
                 this.targetY = GROUND_Y;
                 this.vx = 0;
@@ -737,7 +737,6 @@
             ctx.fillStyle = dirtGrad;
             ctx.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
 
-            // แก้ไข: ใช้ ctx.fillStyle แทน dirtGrad ในการวาดเสา
             ctx.fillStyle = '#92400e';
             ctx.fillRect(20, GROUND_Y - 170, 24, 170);
             ctx.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
@@ -961,7 +960,7 @@
                 sub.innerText = 'ฝีมือสูสีไม่มีใครยอมใคร!';
             }
 
-            document.getElementById('gameover-overlay').classList.remove('hidden');
+            document.getElementById('gameover-overlay').classList.add('hidden');
         }
 
         function gameLoop() {
