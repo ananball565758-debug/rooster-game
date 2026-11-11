@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Rooster Fight Arena - Final Fix</title>
+    <title>Rooster Fight Arena - Single Shared Controller per Screen</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
@@ -24,7 +24,7 @@
         .btn-touch:active { transform: scale(0.92); }
     </style>
 </head>
-<body class="bg-slate-950 text-white h-screen w-screen flex flex-col justify-between items-center p-1 sm:p-3 overflow-hidden select-none">
+<body class="bg-slate-950 text-white h-screen w-screen flex flex-col justify-between items-center p-1 sm:p-2 overflow-hidden select-none">
 
     <!-- LOBBY SCREEN -->
     <div id="lobby-screen" class="absolute inset-0 bg-slate-950/98 flex flex-col items-center justify-center p-4 text-center z-50">
@@ -61,15 +61,15 @@
     </div>
 
     <!-- TOP HUD -->
-    <div class="w-full max-w-6xl bg-slate-900/90 rounded-2xl border-2 border-amber-500/50 p-2 sm:p-3 flex justify-between items-center shadow-xl z-10 gap-2">
+    <div class="w-full max-w-6xl bg-slate-900/90 rounded-2xl border-2 border-amber-500/50 p-2 flex justify-between items-center shadow-xl z-10 gap-2">
         <div class="flex-1 max-w-[42%] flex flex-col items-start gap-1">
             <div class="flex justify-between w-full items-center">
                 <span class="text-red-400 font-black text-sm sm:text-xl tracking-wider text-stroke-1">🔴 P1 (ไก่แดง)</span>
                 <span id="p1-combo" class="text-yellow-400 font-extrabold italic text-xs sm:text-base opacity-0 transition-opacity">COMBO x0</span>
             </div>
-            <div class="w-full h-5 sm:h-7 bg-slate-950 rounded-full border-2 border-red-500 overflow-hidden relative">
+            <div class="w-full h-4 sm:h-6 bg-slate-950 rounded-full border-2 border-red-500 overflow-hidden relative">
                 <div id="p1-hp" class="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-75 w-full"></div>
-                <span id="p1-hp-text" class="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white text-stroke-1">250 / 250</span>
+                <span id="p1-hp-text" class="absolute inset-0 flex items-center justify-center text-xs font-black text-white text-stroke-1">250 / 250</span>
             </div>
             <div class="w-full h-2.5 bg-slate-950 rounded-full border border-cyan-500/50 overflow-hidden relative">
                 <div id="p1-sp" class="h-full bg-cyan-400 transition-all duration-100 w-0"></div>
@@ -77,9 +77,9 @@
             </div>
         </div>
 
-        <div class="flex flex-col items-center justify-center min-w-[70px] sm:min-w-[90px] gap-1">
-            <div id="timer" class="text-xl sm:text-3xl font-black text-amber-400 bg-slate-950 px-2.5 py-0.5 rounded-xl border-2 border-amber-500 text-stroke-1 shadow-inner">60</div>
-            <button id="btn-ingame-home" onclick="returnToHome()" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-[10px] sm:text-xs rounded-lg border border-amber-500/50 cursor-pointer shadow">🏠 หน้าหลัก</button>
+        <div class="flex flex-col items-center justify-center min-w-[60px] gap-0.5">
+            <div id="timer" class="text-lg sm:text-2xl font-black text-amber-400 bg-slate-950 px-2.5 py-0.5 rounded-xl border-2 border-amber-500 text-stroke-1 shadow-inner">60</div>
+            <button onclick="returnToHome()" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-[9px] sm:text-xs rounded-lg border border-amber-500/50 cursor-pointer shadow">🏠 หน้าหลัก</button>
         </div>
 
         <div class="flex-1 max-w-[42%] flex flex-col items-end gap-1">
@@ -87,9 +87,9 @@
                 <span id="p2-combo" class="text-yellow-400 font-extrabold italic text-xs sm:text-base opacity-0 transition-opacity">COMBO x0</span>
                 <span id="p2-title" class="text-blue-400 font-black text-sm sm:text-xl tracking-wider text-stroke-1">🔵 P2 (ไก่ฟ้า)</span>
             </div>
-            <div class="w-full h-5 sm:h-7 bg-slate-950 rounded-full border-2 border-blue-500 overflow-hidden relative flex justify-end">
+            <div class="w-full h-4 sm:h-6 bg-slate-950 rounded-full border-2 border-blue-500 overflow-hidden relative flex justify-end">
                 <div id="p2-hp" class="h-full bg-gradient-to-l from-blue-600 to-cyan-400 transition-all duration-75 w-full"></div>
-                <span id="p2-hp-text" class="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white text-stroke-1">250 / 250</span>
+                <span id="p2-hp-text" class="absolute inset-0 flex items-center justify-center text-xs font-black text-white text-stroke-1">250 / 250</span>
             </div>
             <div class="w-full h-2.5 bg-slate-950 rounded-full border border-yellow-500/50 overflow-hidden relative flex justify-end">
                 <div id="p2-sp" class="h-full bg-yellow-400 transition-all duration-100 w-0"></div>
@@ -123,34 +123,21 @@
         </div>
     </div>
 
-    <!-- TOUCH CONTROLS (ปรับขนาดปุ่มให้ใหญ่พิเศษ กดง่ายเต็มมือถือ) -->
-    <div id="touch-panel" class="w-full max-w-6xl grid grid-cols-2 gap-2 p-2 bg-slate-900/95 rounded-2xl border-2 border-amber-600/50 mb-1">
-        <!-- P1 Touch Controls -->
-        <div class="flex items-center justify-between bg-red-950/40 p-2 rounded-xl border-2 border-red-500/40">
-            <div class="flex gap-2">
-                <button id="btn-p1-left" class="btn-touch w-14 h-16 sm:w-16 sm:h-16 bg-red-700 active:bg-red-500 text-2xl font-black rounded-xl border-2 border-red-300 shadow-xl flex items-center justify-center">⬅</button>
-                <button id="btn-p1-right" class="btn-touch w-14 h-16 sm:w-16 sm:h-16 bg-red-700 active:bg-red-500 text-2xl font-black rounded-xl border-2 border-red-300 shadow-xl flex items-center justify-center">➡</button>
-            </div>
-            <div class="flex gap-1.5">
-                <button id="btn-p1-jump" class="btn-touch w-12 h-16 sm:w-14 sm:h-16 bg-amber-600 active:bg-amber-500 text-xs sm:text-sm font-black rounded-xl border-2 border-yellow-300 shadow-xl flex items-center justify-center">⬆โดด</button>
-                <button id="btn-p1-block" class="btn-touch w-12 h-16 sm:w-14 sm:h-16 bg-slate-700 active:bg-slate-600 text-xs sm:text-sm font-black rounded-xl border-2 border-slate-300 shadow-xl flex items-center justify-center">🛡️การ์ด</button>
-                <button id="btn-p1-atk" class="btn-touch w-14 h-16 sm:w-18 sm:h-16 bg-red-600 active:bg-red-500 text-xs sm:text-sm font-black rounded-xl border-2 border-yellow-300 shadow-2xl flex items-center justify-center">🥊ตี</button>
-                <button id="btn-p1-ult" class="btn-touch w-14 h-16 sm:w-18 sm:h-16 bg-cyan-600 active:bg-cyan-500 text-xs sm:text-sm font-black rounded-xl border-2 border-white shadow-2xl flex items-center justify-center">⚡ไม้ตาย</button>
-            </div>
+    <!-- SHARED SINGLE TOUCH CONTROLLER (แผงปุ่มควบคุมชุดเดียวตรงกลางสำหรับผู้เล่นในเครื่องนั้นๆ) -->
+    <div id="touch-panel" class="w-full max-w-xl flex items-center justify-around bg-slate-900/95 p-3 rounded-2xl border-2 border-amber-600/50 mb-1 shadow-2xl">
+        <!-- D-Pad (ทิศทางซ้าย-ขวา + กระโดดขึ้น) -->
+        <div class="relative w-32 h-32 bg-slate-950/80 rounded-2xl border border-amber-500/30 flex items-center justify-center shadow-inner">
+            <button id="btn-shared-left" class="btn-touch absolute left-1 top-9 w-10 h-14 bg-slate-800 active:bg-slate-600 text-white font-black rounded-lg border border-slate-600 shadow flex items-center justify-center text-lg">◀</button>
+            <button id="btn-shared-right" class="btn-touch absolute right-1 top-9 w-10 h-14 bg-slate-800 active:bg-slate-600 text-white font-black rounded-lg border border-slate-600 shadow flex items-center justify-center text-lg">▶</button>
+            <button id="btn-shared-jump" class="btn-touch absolute top-1 left-9 w-14 h-10 bg-amber-600 active:bg-amber-500 text-white font-black rounded-lg border border-yellow-300 shadow flex items-center justify-center text-xs">▲โดด</button>
+            <div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-800"></div>
         </div>
 
-        <!-- P2 Touch Controls -->
-        <div id="p2-touch-container" class="flex items-center justify-between bg-blue-950/40 p-2 rounded-xl border-2 border-blue-500/40">
-            <div class="flex gap-1.5">
-                <button id="btn-p2-ult" class="btn-touch w-14 h-16 sm:w-18 sm:h-16 bg-cyan-600 active:bg-cyan-500 text-xs sm:text-sm font-black rounded-xl border-2 border-white shadow-2xl flex items-center justify-center">⚡ไม้ตาย</button>
-                <button id="btn-p2-atk" class="btn-touch w-14 h-16 sm:w-18 sm:h-16 bg-blue-600 active:bg-blue-500 text-xs sm:text-sm font-black rounded-xl border-2 border-yellow-300 shadow-2xl flex items-center justify-center">🥊ตี</button>
-                <button id="btn-p2-block" class="btn-touch w-12 h-16 sm:w-14 sm:h-16 bg-slate-700 active:bg-slate-600 text-xs sm:text-sm font-black rounded-xl border-2 border-slate-300 shadow-xl flex items-center justify-center">🛡️การ์ด</button>
-                <button id="btn-p2-jump" class="btn-touch w-12 h-16 sm:w-14 sm:h-16 bg-amber-600 active:bg-amber-500 text-xs sm:text-sm font-black rounded-xl border-2 border-yellow-300 shadow-xl flex items-center justify-center">⬆โดด</button>
-            </div>
-            <div class="flex gap-2">
-                <button id="btn-p2-left" class="btn-touch w-14 h-16 sm:w-16 sm:h-16 bg-blue-700 active:bg-blue-500 text-2xl font-black rounded-xl border-2 border-blue-300 shadow-xl flex items-center justify-center">⬅</button>
-                <button id="btn-p2-right" class="btn-touch w-14 h-16 sm:w-16 sm:h-16 bg-blue-700 active:bg-blue-500 text-2xl font-black rounded-xl border-2 border-blue-300 shadow-xl flex items-center justify-center">➡</button>
-            </div>
+        <!-- Action Buttons (ปุ่ม A, B, C สไตล์จอยเกม) -->
+        <div class="flex items-center gap-2">
+            <button id="btn-shared-block" class="btn-touch w-14 h-16 bg-slate-700 active:bg-slate-600 text-white font-black rounded-xl border-2 border-slate-300 shadow-lg flex flex-col items-center justify-center text-xs">🛡️<span class="text-[9px]">การ์ด</span></button>
+            <button id="btn-shared-atk" class="btn-touch w-16 h-16 bg-red-600 active:bg-red-500 text-white font-extrabold rounded-full border-2 border-yellow-300 shadow-xl flex flex-col items-center justify-center text-base">🥊<span class="text-[10px]">ตี/เตะ</span></button>
+            <button id="btn-shared-ult" class="btn-touch w-16 h-16 bg-cyan-600 active:bg-cyan-500 text-white font-extrabold rounded-full border-2 border-white shadow-xl flex flex-col items-center justify-center text-base">⚡<span class="text-[10px]">ไม้ตาย</span></button>
         </div>
     </div>
 
@@ -170,7 +157,6 @@
             const pveBtn = document.getElementById('btn-mode-pve');
             const roomInputC = document.getElementById('room-input-container');
             const botDiffC = document.getElementById('bot-difficulty-container');
-            const p2Touch = document.getElementById('p2-touch-container');
             const p2Title = document.getElementById('p2-title');
 
             if (mode === 'online') {
@@ -178,14 +164,12 @@
                 pveBtn.className = "px-4 py-2 bg-slate-800 text-slate-400 font-black text-xs sm:text-sm rounded-xl border-2 border-slate-700 shadow cursor-pointer";
                 roomInputC.classList.remove('hidden');
                 botDiffC.classList.add('hidden');
-                p2Touch.style.display = 'flex';
                 p2Title.innerText = "🔵 P2 (ไก่ฟ้า)";
             } else {
                 pveBtn.className = "px-4 py-2 bg-indigo-600 text-white font-black text-xs sm:text-sm rounded-xl border-2 border-yellow-300 shadow-lg cursor-pointer scale-105";
                 onlineBtn.className = "px-4 py-2 bg-slate-800 text-slate-400 font-black text-xs sm:text-sm rounded-xl border-2 border-slate-700 shadow cursor-pointer";
                 roomInputC.classList.add('hidden');
                 botDiffC.classList.remove('hidden');
-                p2Touch.style.display = 'none';
                 p2Title.innerText = "🤖 P2 (AI BOT)";
             }
         }
@@ -287,33 +271,24 @@
         window.addEventListener('keydown', (e) => { keyState[e.code] = true; });
         window.addEventListener('keyup', (e) => { keyState[e.code] = false; });
 
-        const touchInput = {
-            p1: { left: false, right: false, jump: false, block: false, attack: false, ultimate: false },
-            p2: { left: false, right: false, jump: false, block: false, attack: false, ultimate: false }
-        };
+        // ปุ่มควบคุมกลางชุดเดียว (ใช้ควบคุมตัวละครประจำเครื่องนั้นๆ)
+        const sharedTouchInput = { left: false, right: false, jump: false, block: false, attack: false, ultimate: false };
 
-        function bindTouchBtn(btnId, player, action) {
+        function bindSharedBtn(btnId, action) {
             const btn = document.getElementById(btnId);
             if (!btn) return;
-            const setVal = (val) => { touchInput[player][action] = val; };
+            const setVal = (val) => { sharedTouchInput[action] = val; };
             btn.addEventListener('pointerdown', (e) => { e.preventDefault(); setVal(true); });
             btn.addEventListener('pointerup', (e) => { e.preventDefault(); setVal(false); });
             btn.addEventListener('pointerleave', (e) => { e.preventDefault(); setVal(false); });
         }
 
-        bindTouchBtn('btn-p1-left', 'p1', 'left');
-        bindTouchBtn('btn-p1-right', 'p1', 'right');
-        bindTouchBtn('btn-p1-jump', 'p1', 'jump');
-        bindTouchBtn('btn-p1-block', 'p1', 'block');
-        bindTouchBtn('btn-p1-atk', 'p1', 'attack');
-        bindTouchBtn('btn-p1-ult', 'p1', 'ultimate');
-
-        bindTouchBtn('btn-p2-left', 'p2', 'left');
-        bindTouchBtn('btn-p2-right', 'p2', 'right');
-        bindTouchBtn('btn-p2-jump', 'p2', 'jump');
-        bindTouchBtn('btn-p2-block', 'p2', 'block');
-        bindTouchBtn('btn-p2-atk', 'p2', 'attack');
-        bindTouchBtn('btn-p2-ult', 'p2', 'ultimate');
+        bindSharedBtn('btn-shared-left', 'left');
+        bindSharedBtn('btn-shared-right', 'right');
+        bindSharedBtn('btn-shared-jump', 'jump');
+        bindSharedBtn('btn-shared-block', 'block');
+        bindSharedBtn('btn-shared-atk', 'attack');
+        bindSharedBtn('btn-shared-ult', 'ultimate');
 
         class FeatherParticle {
             constructor(x, y, color) {
@@ -763,11 +738,11 @@
             dirtGrad.addColorStop(0.3, '#92400e');
             dirtGrad.addColorStop(1, '#451a03');
             ctx.fillStyle = dirtGrad;
-            ctx.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
+            dirtGrad.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
 
             ctx.fillStyle = '#92400e';
-            ctx.fillRect(20, GROUND_Y - 170, 24, 170);
-            ctx.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
+            dirtGrad.fillRect(20, GROUND_Y - 170, 24, 170);
+            dirtGrad.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
         }
 
         function updateHealthUI(player, hp, maxHp) {
@@ -840,16 +815,15 @@
             if (gameMode === 'online') {
                 if (!myRole) return;
                 let me = (myRole === 'p1') ? p1 : p2;
-                let touchKey = (myRole === 'p1') ? 'p1' : 'p2';
 
-                if (keyState['KeyA'] || (myRole === 'p2' && keyState['ArrowLeft']) || touchInput[touchKey].left) me.move(-1);
-                if (keyState['KeyD'] || (myRole === 'p2' && keyState['ArrowRight']) || touchInput[touchKey].right) me.move(1);
-                if (keyState['KeyW'] || (myRole === 'p2' && keyState['ArrowUp']) || touchInput[touchKey].jump) me.jump();
+                if (keyState['KeyA'] || keyState['ArrowLeft'] || sharedTouchInput.left) me.move(-1);
+                if (keyState['KeyD'] || keyState['ArrowRight'] || sharedTouchInput.right) me.move(1);
+                if (keyState['KeyW'] || keyState['ArrowUp'] || sharedTouchInput.jump) me.jump();
                 
-                me.block(keyState['KeyS'] || (myRole === 'p2' && keyState['ArrowDown']) || touchInput[touchKey].block);
+                me.block(keyState['KeyS'] || keyState['ArrowDown'] || sharedTouchInput.block);
                 
-                if (keyState['KeyF'] || (myRole === 'p2' && keyState['KeyK']) || touchInput[touchKey].attack) me.triggerAttack();
-                if (keyState['KeyR'] || (myRole === 'p2' && keyState['ShiftRight']) || touchInput[touchKey].ultimate) {
+                if (keyState['KeyF'] || keyState['KeyK'] || sharedTouchInput.attack) me.triggerAttack();
+                if (keyState['KeyR'] || keyState['KeyG'] || keyState['KeyL'] || sharedTouchInput.ultimate) {
                     let opponent = (myRole === 'p1') ? p2 : p1;
                     me.triggerUltimate(opponent);
                 }
@@ -871,12 +845,13 @@
                     lastSendTime = now;
                 }
             } else {
-                if (keyState['KeyA'] || touchInput.p1.left) p1.move(-1);
-                if (keyState['KeyD'] || touchInput.p1.right) p1.move(1);
-                if (keyState['KeyW'] || touchInput.p1.jump) p1.jump();
-                p1.block(keyState['KeyS'] || touchInput.p1.block);
-                if (keyState['KeyF'] || touchInput.p1.attack) p1.triggerAttack();
-                if (keyState['KeyR'] || touchInput.p1.ultimate) p1.triggerUltimate(p2);
+                // โหมดเล่นกับบอท (ควบคุม P1 ด้วยชุดปุ่มกลางจอ)
+                if (keyState['KeyA'] || keyState['ArrowLeft'] || sharedTouchInput.left) p1.move(-1);
+                if (keyState['KeyD'] || keyState['ArrowRight'] || sharedTouchInput.right) p1.move(1);
+                if (keyState['KeyW'] || keyState['ArrowUp'] || sharedTouchInput.jump) p1.jump();
+                p1.block(keyState['KeyS'] || keyState['ArrowDown'] || sharedTouchInput.block);
+                if (keyState['KeyF'] || keyState['KeyK'] || sharedTouchInput.attack) p1.triggerAttack();
+                if (keyState['KeyR'] || keyState['KeyG'] || sharedTouchInput.ultimate) p1.triggerUltimate(p2);
             }
         }
 
