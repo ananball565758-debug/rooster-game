@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Rooster Fight Arena - Single Shared Controller per Screen</title>
+    <title>Rooster Fight Arena - Fixed</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
@@ -123,9 +123,8 @@
         </div>
     </div>
 
-    <!-- SHARED SINGLE TOUCH CONTROLLER (แผงปุ่มควบคุมชุดเดียวตรงกลางสำหรับผู้เล่นในเครื่องนั้นๆ) -->
+    <!-- TOUCH CONTROLLER -->
     <div id="touch-panel" class="w-full max-w-xl flex items-center justify-around bg-slate-900/95 p-3 rounded-2xl border-2 border-amber-600/50 mb-1 shadow-2xl">
-        <!-- D-Pad (ทิศทางซ้าย-ขวา + กระโดดขึ้น) -->
         <div class="relative w-32 h-32 bg-slate-950/80 rounded-2xl border border-amber-500/30 flex items-center justify-center shadow-inner">
             <button id="btn-shared-left" class="btn-touch absolute left-1 top-9 w-10 h-14 bg-slate-800 active:bg-slate-600 text-white font-black rounded-lg border border-slate-600 shadow flex items-center justify-center text-lg">◀</button>
             <button id="btn-shared-right" class="btn-touch absolute right-1 top-9 w-10 h-14 bg-slate-800 active:bg-slate-600 text-white font-black rounded-lg border border-slate-600 shadow flex items-center justify-center text-lg">▶</button>
@@ -133,7 +132,6 @@
             <div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-800"></div>
         </div>
 
-        <!-- Action Buttons (ปุ่ม A, B, C สไตล์จอยเกม) -->
         <div class="flex items-center gap-2">
             <button id="btn-shared-block" class="btn-touch w-14 h-16 bg-slate-700 active:bg-slate-600 text-white font-black rounded-xl border-2 border-slate-300 shadow-lg flex flex-col items-center justify-center text-xs">🛡️<span class="text-[9px]">การ์ด</span></button>
             <button id="btn-shared-atk" class="btn-touch w-16 h-16 bg-red-600 active:bg-red-500 text-white font-extrabold rounded-full border-2 border-yellow-300 shadow-xl flex flex-col items-center justify-center text-base">🥊<span class="text-[10px]">ตี/เตะ</span></button>
@@ -271,7 +269,6 @@
         window.addEventListener('keydown', (e) => { keyState[e.code] = true; });
         window.addEventListener('keyup', (e) => { keyState[e.code] = false; });
 
-        // ปุ่มควบคุมกลางชุดเดียว (ใช้ควบคุมตัวละครประจำเครื่องนั้นๆ)
         const sharedTouchInput = { left: false, right: false, jump: false, block: false, attack: false, ultimate: false };
 
         function bindSharedBtn(btnId, action) {
@@ -738,11 +735,12 @@
             dirtGrad.addColorStop(0.3, '#92400e');
             dirtGrad.addColorStop(1, '#451a03');
             ctx.fillStyle = dirtGrad;
-            dirtGrad.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
+            ctx.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
 
+            // แก้ไข: ใช้ ctx.fillStyle แทน dirtGrad ในการวาดเสา
             ctx.fillStyle = '#92400e';
-            dirtGrad.fillRect(20, GROUND_Y - 170, 24, 170);
-            dirtGrad.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
+            ctx.fillRect(20, GROUND_Y - 170, 24, 170);
+            ctx.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
         }
 
         function updateHealthUI(player, hp, maxHp) {
@@ -845,7 +843,6 @@
                     lastSendTime = now;
                 }
             } else {
-                // โหมดเล่นกับบอท (ควบคุม P1 ด้วยชุดปุ่มกลางจอ)
                 if (keyState['KeyA'] || keyState['ArrowLeft'] || sharedTouchInput.left) p1.move(-1);
                 if (keyState['KeyD'] || keyState['ArrowRight'] || sharedTouchInput.right) p1.move(1);
                 if (keyState['KeyW'] || keyState['ArrowUp'] || sharedTouchInput.jump) p1.jump();
