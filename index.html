@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Rooster Fight Arena - Fixed Final</title>
+    <title>Rooster Fight Arena</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
@@ -126,16 +126,16 @@
     <!-- TOUCH CONTROLLER -->
     <div id="touch-panel" class="w-full max-w-xl flex items-center justify-around bg-slate-900/95 p-3 rounded-2xl border-2 border-amber-600/50 mb-1 shadow-2xl">
         <div class="relative w-32 h-32 bg-slate-950/80 rounded-2xl border border-amber-500/30 flex items-center justify-center shadow-inner">
-            <button id="btn-shared-left" class="btn-touch absolute left-1 top-9 w-10 h-14 bg-slate-800 active:bg-slate-600 text-white font-black rounded-lg border border-slate-600 shadow flex items-center justify-center text-lg">◀</button>
-            <button id="btn-shared-right" class="btn-touch absolute right-1 top-9 w-10 h-14 bg-slate-800 active:bg-slate-600 text-white font-black rounded-lg border border-slate-600 shadow flex items-center justify-center text-lg">▶</button>
-            <button id="btn-shared-jump" class="btn-touch absolute top-1 left-9 w-14 h-10 bg-amber-600 active:bg-amber-500 text-white font-black rounded-lg border border-yellow-300 shadow flex items-center justify-center text-xs">▲โดด</button>
+            <button id="btn-touch-left" class="btn-touch absolute left-1 top-9 w-10 h-14 bg-slate-800 active:bg-slate-600 text-white font-black rounded-lg border border-slate-600 shadow flex items-center justify-center text-lg">◀</button>
+            <button id="btn-touch-right" class="btn-touch absolute right-1 top-9 w-10 h-14 bg-slate-800 active:bg-slate-600 text-white font-black rounded-lg border border-slate-600 shadow flex items-center justify-center text-lg">▶</button>
+            <button id="btn-touch-jump" class="btn-touch absolute top-1 left-9 w-14 h-10 bg-amber-600 active:bg-amber-500 text-white font-black rounded-lg border border-yellow-300 shadow flex items-center justify-center text-xs">▲โดด</button>
             <div class="w-8 h-8 rounded-full bg-slate-900 border border-slate-800"></div>
         </div>
 
         <div class="flex items-center gap-2">
-            <button id="btn-shared-block" class="btn-touch w-14 h-16 bg-slate-700 active:bg-slate-600 text-white font-black rounded-xl border-2 border-slate-300 shadow-lg flex flex-col items-center justify-center text-xs">🛡️<span class="text-[9px]">การ์ด</span></button>
-            <button id="btn-shared-atk" class="btn-touch w-16 h-16 bg-red-600 active:bg-red-500 text-white font-extrabold rounded-full border-2 border-yellow-300 shadow-xl flex flex-col items-center justify-center text-base">🥊<span class="text-[10px]">ตี/เตะ</span></button>
-            <button id="btn-shared-ult" class="btn-touch w-16 h-16 bg-cyan-600 active:bg-cyan-500 text-white font-extrabold rounded-full border-2 border-white shadow-xl flex flex-col items-center justify-center text-base">⚡<span class="text-[10px]">ไม้ตาย</span></button>
+            <button id="btn-touch-block" class="btn-touch w-14 h-16 bg-slate-700 active:bg-slate-600 text-white font-black rounded-xl border-2 border-slate-300 shadow-lg flex flex-col items-center justify-center text-xs">🛡️<span class="text-[9px]">การ์ด</span></button>
+            <button id="btn-touch-atk" class="btn-touch w-16 h-16 bg-red-600 active:bg-red-500 text-white font-extrabold rounded-full border-2 border-yellow-300 shadow-xl flex flex-col items-center justify-center text-base">🥊<span class="text-[10px]">ตี/เตะ</span></button>
+            <button id="btn-touch-ult" class="btn-touch w-16 h-16 bg-cyan-600 active:bg-cyan-500 text-white font-extrabold rounded-full border-2 border-white shadow-xl flex flex-col items-center justify-center text-base">⚡<span class="text-[10px]">ไม้ตาย</span></button>
         </div>
     </div>
 
@@ -147,7 +147,7 @@
         let myRole = ''; 
         let gameMode = 'online';
         let botDifficulty = 'easy';
-        let isMatchReady = true; // เปิดให้พร้อมเล่นทันที
+        let isMatchReady = false;
 
         function setGameMode(mode) {
             gameMode = mode;
@@ -269,124 +269,27 @@
         window.addEventListener('keydown', (e) => { keyState[e.code] = true; });
         window.addEventListener('keyup', (e) => { keyState[e.code] = false; });
 
-        const sharedTouchInput = { left: false, right: false, jump: false, block: false, attack: false, ultimate: false };
+        const touchInput = { left: false, right: false, jump: false, block: false, attack: false, ultimate: false };
 
-        function bindSharedBtn(btnId, action) {
+        function bindTouchBtn(btnId, action) {
             const btn = document.getElementById(btnId);
             if (!btn) return;
-            const setVal = (val) => { sharedTouchInput[action] = val; };
+            const setVal = (val) => { touchInput[action] = val; };
             btn.addEventListener('pointerdown', (e) => { e.preventDefault(); setVal(true); });
             btn.addEventListener('pointerup', (e) => { e.preventDefault(); setVal(false); });
             btn.addEventListener('pointerleave', (e) => { e.preventDefault(); setVal(false); });
         }
 
-        bindSharedBtn('btn-shared-left', 'left');
-        bindSharedBtn('btn-shared-right', 'right');
-        bindSharedBtn('btn-shared-jump', 'jump');
-        bindSharedBtn('btn-shared-block', 'block');
-        bindSharedBtn('btn-shared-atk', 'attack');
-        bindSharedBtn('btn-shared-ult', 'ultimate');
+        bindTouchBtn('btn-touch-left', 'left');
+        bindTouchBtn('btn-touch-right', 'right');
+        bindTouchBtn('btn-touch-jump', 'jump');
+        bindTouchBtn('btn-touch-block', 'block');
+        bindTouchBtn('btn-touch-atk', 'attack');
+        bindTouchBtn('btn-touch-ult', 'ultimate');
 
         class FeatherParticle {
             constructor(x, y, color) {
                 this.x = x; this.y = y;
                 this.vx = (Math.random() - 0.5) * 12;
                 this.vy = (Math.random() - 0.7) * 10;
-                this.size = Math.random() * 8 + 5;
-                this.color = color;
-                this.rotation = Math.random() * Math.PI * 2;
-                this.vRot = (Math.random() - 0.5) * 0.3;
-                this.life = 1.0;
-                this.decay = Math.random() * 0.02 + 0.02;
-            }
-            update() {
-                this.x += this.vx; this.y += this.vy;
-                this.vy += 0.2; this.vx *= 0.95;
-                this.rotation += this.vRot;
-                this.life -= this.decay;
-            }
-            draw(ctx) {
-                ctx.save();
-                ctx.translate(this.x, this.y);
-                ctx.rotate(this.rotation);
-                ctx.globalAlpha = Math.max(0, this.life);
-                ctx.fillStyle = this.color;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, this.size, this.size / 3, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        class FloatingText {
-            constructor(x, y, text, color = '#ffeb3b', fontSize = 24) {
-                this.x = x; this.y = y; this.text = text; this.color = color;
-                this.fontSize = fontSize; this.life = 1.0; this.vy = -2.5;
-            }
-            update() { this.y += this.vy; this.life -= 0.025; }
-            draw(ctx) {
-                ctx.save();
-                ctx.globalAlpha = Math.max(0, this.life);
-                ctx.font = `900 ${this.fontSize}px Kanit`;
-                ctx.fillStyle = this.color;
-                ctx.strokeStyle = '#000';
-                ctx.lineWidth = 4;
-                ctx.strokeText(this.text, this.x, this.y);
-                ctx.fillText(this.text, this.x, this.y);
-                ctx.restore();
-            }
-        }
-
-        let particles = [];
-        let floatTexts = [];
-        let screenShake = 0;
-
-        function spawnFeathers(x, y, color, count = 12) {
-            for (let i = 0; i < count; i++) particles.push(new FeatherParticle(x, y, color));
-        }
-
-        class Rooster {
-            constructor(id, x, color, facingRight, isBot = false) {
-                this.id = id;
-                this.x = x;
-                this.y = GROUND_Y;
-                this.targetX = x;
-                this.targetY = GROUND_Y;
-                this.vx = 0;
-                this.vy = 0;
-                this.width = 70;
-                this.height = 90;
-                this.color = color;
-                this.facingRight = facingRight;
-                this.isBot = isBot;
-
-                this.hp = 250;
-                this.maxHp = 250;
-                this.energy = 0; 
-                this.isGrounded = true;
-                this.isBlocking = false;
-
-                this.isAttacking = false;
-                this.isUltimate = false;
-                this.attackType = null;
-                this.attackCooldown = 0;
-                this.hitStun = 0;
-                this.rotation = 0;
-
-                this.comboCount = 0;
-                this.comboResetTimer = 0;
-                this.animTimer = 0;
-                this.beakAnim = 0;
-                this.hasHitOpponent = false;
-            }
-
-            update(opponent) {
-                if (!isMatchReady) return;
-
-                if (this.isBot && gameState === 'PLAYING') {
-                    this.runAIBot(opponent);
-                }
-
-                if (gameMode === 'online' && this.id !== myRole) {
-                    this.x += (this.targetX - this.x) * 0.3;
-                    this.y += (
+                this
