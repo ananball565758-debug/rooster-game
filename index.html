@@ -123,31 +123,31 @@
         </div>
     </div>
 
-    <!-- TOUCH CONTROLS -->
-    <div id="touch-panel" class="w-full max-w-6xl grid grid-cols-2 gap-2 p-1 bg-slate-900/80 rounded-xl border border-amber-600/30">
-        <div class="flex items-center justify-around bg-red-950/30 p-1 rounded-lg border border-red-500/30">
-            <div class="flex gap-1">
-                <button id="btn-p1-left" class="btn-touch w-9 h-10 sm:w-12 sm:h-12 bg-red-800 active:bg-red-600 font-black rounded-lg border border-red-400 shadow">⬅</button>
-                <button id="btn-p1-right" class="btn-touch w-9 h-10 sm:w-12 sm:h-12 bg-red-800 active:bg-red-600 font-black rounded-lg border border-red-400 shadow">➡</button>
+    <!-- TOUCH CONTROLS (ปุ่มใหญ่ขึ้น กดง่ายบนมือถือ) -->
+    <div id="touch-panel" class="w-full max-w-6xl grid grid-cols-2 gap-3 p-2 bg-slate-900/90 rounded-2xl border-2 border-amber-600/40">
+        <div class="flex items-center justify-around bg-red-950/40 p-2 rounded-xl border-2 border-red-500/40">
+            <div class="flex gap-2">
+                <button id="btn-p1-left" class="btn-touch w-12 h-14 sm:w-16 sm:h-16 bg-red-700 active:bg-red-500 text-xl font-black rounded-xl border-2 border-red-300 shadow-xl flex items-center justify-center">⬅</button>
+                <button id="btn-p1-right" class="btn-touch w-12 h-14 sm:w-16 sm:h-16 bg-red-700 active:bg-red-500 text-xl font-black rounded-xl border-2 border-red-300 shadow-xl flex items-center justify-center">➡</button>
             </div>
-            <div class="flex gap-1">
-                <button id="btn-p1-jump" class="btn-touch w-9 h-10 sm:w-11 sm:h-12 bg-amber-600 active:bg-amber-500 font-black rounded-lg border border-yellow-300 text-[10px] sm:text-xs">⬆โดด</button>
-                <button id="btn-p1-block" class="btn-touch w-9 h-10 sm:w-11 sm:h-12 bg-slate-700 active:bg-slate-600 font-black rounded-lg border border-slate-400 text-[10px] sm:text-xs">🛡️การ์ด</button>
-                <button id="btn-p1-atk" class="btn-touch w-10 h-10 sm:w-13 sm:h-12 bg-red-600 active:bg-red-500 font-black rounded-lg border-2 border-yellow-300 text-[10px] sm:text-xs shadow-lg">🥊ตี</button>
-                <button id="btn-p1-ult" class="btn-touch w-10 h-10 sm:w-13 sm:h-12 bg-cyan-600 active:bg-cyan-500 font-black rounded-lg border-2 border-white text-[10px] sm:text-xs shadow-lg">⚡ไม้ตาย</button>
+            <div class="flex gap-1.5">
+                <button id="btn-p1-jump" class="btn-touch w-12 h-14 sm:w-14 sm:h-16 bg-amber-600 active:bg-amber-500 text-xs sm:text-sm font-black rounded-xl border-2 border-yellow-300 shadow-xl flex items-center justify-center">⬆โดด</button>
+                <button id="btn-p1-block" class="btn-touch w-12 h-14 sm:w-14 sm:h-16 bg-slate-700 active:bg-slate-600 text-xs sm:text-sm font-black rounded-xl border-2 border-slate-300 shadow-xl flex items-center justify-center">🛡️การ์ด</button>
+                <button id="btn-p1-atk" class="btn-touch w-14 h-14 sm:w-18 sm:h-16 bg-red-600 active:bg-red-500 text-xs sm:text-sm font-black rounded-xl border-2 border-yellow-300 shadow-2xl flex items-center justify-center">🥊ตี</button>
+                <button id="btn-p1-ult" class="btn-touch w-14 h-14 sm:w-18 sm:h-16 bg-cyan-600 active:bg-cyan-500 text-xs sm:text-sm font-black rounded-xl border-2 border-white shadow-2xl flex items-center justify-center">⚡ไม้ตาย</button>
             </div>
         </div>
 
-        <div id="p2-touch-container" class="flex items-center justify-around bg-blue-950/30 p-1 rounded-lg border border-blue-500/30">
-            <div class="flex gap-1">
-                <button id="btn-p2-ult" class="btn-touch w-10 h-10 sm:w-13 sm:h-12 bg-cyan-600 active:bg-cyan-500 font-black rounded-lg border-2 border-white text-[10px] sm:text-xs shadow-lg">⚡ไม้ตาย</button>
-                <button id="btn-p2-atk" class="btn-touch w-10 h-10 sm:w-13 sm:h-12 bg-blue-600 active:bg-blue-500 font-black rounded-lg border-2 border-yellow-300 text-[10px] sm:text-xs shadow-lg">🥊ตี</button>
-                <button id="btn-p2-block" class="btn-touch w-9 h-10 sm:w-11 sm:h-12 bg-slate-700 active:bg-slate-600 font-black rounded-lg border border-slate-400 text-[10px] sm:text-xs">🛡️การ์ด</button>
-                <button id="btn-p2-jump" class="btn-touch w-9 h-10 sm:w-11 sm:h-12 bg-amber-600 active:bg-amber-500 font-black rounded-lg border border-yellow-300 text-[10px] sm:text-xs">⬆โดด</button>
+        <div id="p2-touch-container" class="flex items-center justify-around bg-blue-950/40 p-2 rounded-xl border-2 border-blue-500/40">
+            <div class="flex gap-1.5">
+                <button id="btn-p2-ult" class="btn-touch w-14 h-14 sm:w-18 sm:h-16 bg-cyan-600 active:bg-cyan-500 text-xs sm:text-sm font-black rounded-xl border-2 border-white shadow-2xl flex items-center justify-center">⚡ไม้ตาย</button>
+                <button id="btn-p2-atk" class="btn-touch w-14 h-14 sm:w-18 sm:h-16 bg-blue-600 active:bg-blue-500 text-xs sm:text-sm font-black rounded-xl border-2 border-yellow-300 shadow-2xl flex items-center justify-center">🥊ตี</button>
+                <button id="btn-p2-block" class="btn-touch w-12 h-14 sm:w-14 sm:h-16 bg-slate-700 active:bg-slate-600 text-xs sm:text-sm font-black rounded-xl border-2 border-slate-300 shadow-xl flex items-center justify-center">🛡️การ์ด</button>
+                <button id="btn-p2-jump" class="btn-touch w-12 h-14 sm:w-14 sm:h-16 bg-amber-600 active:bg-amber-500 text-xs sm:text-sm font-black rounded-xl border-2 border-yellow-300 shadow-xl flex items-center justify-center">⬆โดด</button>
             </div>
-            <div class="flex gap-1">
-                <button id="btn-p2-left" class="btn-touch w-9 h-10 sm:w-12 sm:h-12 bg-blue-800 active:bg-blue-600 font-black rounded-lg border border-blue-400 shadow">⬅</button>
-                <button id="btn-p2-right" class="btn-touch w-9 h-10 sm:w-12 sm:h-12 bg-blue-800 active:bg-blue-600 font-black rounded-lg border border-blue-400 shadow">➡</button>
+            <div class="flex gap-2">
+                <button id="btn-p2-left" class="btn-touch w-12 h-14 sm:w-16 sm:h-16 bg-blue-700 active:bg-blue-500 text-xl font-black rounded-xl border-2 border-blue-300 shadow-xl flex items-center justify-center">⬅</button>
+                <button id="btn-p2-right" class="btn-touch w-12 h-14 sm:w-16 sm:h-16 bg-blue-700 active:bg-blue-500 text-xl font-black rounded-xl border-2 border-blue-300 shadow-xl flex items-center justify-center">➡</button>
             </div>
         </div>
     </div>
@@ -586,14 +586,15 @@
                 ) {
                     this.hasHitOpponent = true;
                     const isUlt = (this.attackType === 'ultimate');
+                    let dmg = isUlt ? 75 : (this.attackType === 'jumpkick' ? 18 : 10);
 
                     if (gameMode === 'online') {
                         socket.emit('player-attack', {
                             roomId: currentRoom,
-                            attackType: this.attackType
+                            attackType: this.attackType,
+                            damage: dmg
                         });
                     } else {
-                        let dmg = isUlt ? 75 : (this.attackType === 'jumpkick' ? 18 : 10);
                         opponent.takeDamage(dmg, this.facingRight ? 15 : -15, this, isUlt, this.attackType === 'jumpkick' || isUlt);
                         this.gainEnergy(isUlt ? 0 : 18);
                         this.registerCombo();

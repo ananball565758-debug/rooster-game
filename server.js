@@ -59,8 +59,7 @@ io.on('connection', (socket) => {
             let p = rooms[roomId].players[socket.id];
             p.x = data.x;
             p.y = data.y;
-            p.hp = data.hp;
-            p.energy = data.energy;
+            // ไม่ทับค่า hp/energy โดยตรงจาก action ทั่วไป ป้องกันเลือดดีดกลับ
             p.facingRight = data.facingRight;
             p.isBlocking = data.isBlocking;
             p.isAttacking = data.isAttacking;
@@ -83,7 +82,7 @@ io.on('connection', (socket) => {
         if (!opponentSocketId) return;
         let opponent = room.players[opponentSocketId];
 
-        let damage = data.attackType === 'ultimate' ? 75 : (data.attackType === 'jumpkick' ? 18 : 10);
+        let damage = data.damage || (data.attackType === 'ultimate' ? 75 : (data.attackType === 'jumpkick' ? 18 : 10));
         let isUlt = (data.attackType === 'ultimate');
 
         opponent.hp = Math.max(0, opponent.hp - damage);
