@@ -59,7 +59,6 @@ io.on('connection', (socket) => {
             let p = rooms[roomId].players[socket.id];
             p.x = data.x;
             p.y = data.y;
-            // ไม่ทับค่า hp/energy โดยตรงจาก action ทั่วไป ป้องกันเลือดดีดกลับ
             p.facingRight = data.facingRight;
             p.isBlocking = data.isBlocking;
             p.isAttacking = data.isAttacking;
