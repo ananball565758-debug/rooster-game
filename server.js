@@ -91,7 +91,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // เพิ่มฟังก์ชันรองรับการโจมตีจากผู้เล่น เพื่อคำนวณ HP และ SP บน Server กลาง
     socket.on('player-attack', (data) => {
         let room = rooms[data.roomId];
         if (!room) return;
@@ -104,18 +103,14 @@ io.on('connection', (socket) => {
 
         if (target && attacker) {
             let isUlt = (data.attackType === 'ultimate');
-            
-            // หักเลือดเป้าหมาย
             target.hp = Math.max(0, target.hp - data.damage);
 
-            // คำนวณเกจพลังงาน
             if (!isUlt) {
                 attacker.energy = Math.min(100, (attacker.energy || 0) + 25);
             } else {
                 attacker.energy = 0;
             }
 
-            // ส่งข้อมูลอัปเดตสถานะล่าสุดให้ทุกคนในห้องตรงกัน
             io.to(data.roomId).emit('apply-hit', {
                 targetRole: data.targetRole,
                 damage: data.damage,
