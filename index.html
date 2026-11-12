@@ -80,11 +80,11 @@
                 <span id="p1-combo" class="text-yellow-400 font-extrabold italic text-xs sm:text-base opacity-0 transition-opacity">COMBO x0</span>
             </div>
             <div class="w-full h-5 sm:h-7 bg-slate-950 rounded-full border-2 border-red-500 overflow-hidden relative">
-                <div id="p1-hp" class="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-150 w-full"></div>
+                <div id="p1-hp" class="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-75 w-full"></div>
                 <span id="p1-hp-text" class="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white text-stroke-1">250 / 250</span>
             </div>
             <div class="w-full h-3 bg-slate-950 rounded-full border border-cyan-500/50 overflow-hidden relative shadow-inner">
-                <div id="p1-sp" class="h-full bg-gradient-to-r from-cyan-500 to-blue-400 transition-all duration-150 w-0"></div>
+                <div id="p1-sp" class="h-full bg-gradient-to-r from-cyan-500 to-blue-400 transition-all duration-100 w-0"></div>
                 <span id="p1-sp-text" class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white text-stroke-1">SP 0%</span>
             </div>
         </div>
@@ -100,11 +100,11 @@
                 <span id="p2-label-hud" class="text-blue-400 font-black text-sm sm:text-xl tracking-wider text-stroke-1">🔵 P2 (ไก่ฟ้า)</span>
             </div>
             <div class="w-full h-5 sm:h-7 bg-slate-950 rounded-full border-2 border-blue-500 overflow-hidden relative flex justify-end">
-                <div id="p2-hp" class="h-full bg-gradient-to-l from-blue-600 to-cyan-400 transition-all duration-150 w-full"></div>
+                <div id="p2-hp" class="h-full bg-gradient-to-l from-blue-600 to-cyan-400 transition-all duration-75 w-full"></div>
                 <span id="p2-hp-text" class="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white text-stroke-1">250 / 250</span>
             </div>
             <div class="w-full h-3 bg-slate-950 rounded-full border border-yellow-500/50 overflow-hidden relative flex justify-end shadow-inner">
-                <div id="p2-sp" class="h-full bg-gradient-to-l from-yellow-400 to-amber-500 transition-all duration-150 w-0"></div>
+                <div id="p2-sp" class="h-full bg-gradient-to-l from-yellow-400 to-amber-500 transition-all duration-100 w-0"></div>
                 <span id="p2-sp-text" class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white text-stroke-1">SP 0%</span>
             </div>
         </div>
@@ -115,10 +115,15 @@
         <canvas id="gameCanvas" width="1024" height="576" class="w-full h-full object-contain"></canvas>
 
         <div id="waiting-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-4 text-center z-40 hidden">
-            <h2 class="text-3xl sm:text-5xl font-black text-amber-400 mb-3 animate-pulse text-stroke-2">⏳ กำลังรอผู้เล่นคนที่ 2...</h2>
+            <h2 class="text-3xl sm:text-5xl font-black text-amber-400 mb-3 animate-pulse text-stroke-2">⏳ กำลังรอเพื่อนเข้าห้อง...</h2>
             <p id="room-code-display" class="text-sm sm:text-lg text-slate-300 mb-6 font-semibold">รหัสห้องของคุณ: -</p>
             <div class="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-6"></div>
             <button onclick="returnToHome()" class="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow cursor-pointer">ยกเลิก / ออกจากห้อง</button>
+        </div>
+
+        <div id="countdown-overlay" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-4 text-center z-40 hidden">
+            <h2 id="countdown-text" class="text-6xl sm:text-9xl font-black text-amber-400 animate-bounce text-stroke-2">3</h2>
+            <p class="text-xl sm:text-3xl text-white font-bold mt-4 text-stroke-1">เตรียมตัวประลองพร้อมกัน!</p>
         </div>
 
         <div id="gameover-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-4 text-center z-30 hidden">
@@ -153,9 +158,10 @@
     <script>
         const socket = io();
         let currentRoom = '';
-        let myRole = 'p1'; 
+        let myRole = ''; 
         let gameMode = 'online';
         let botDifficulty = 'easy';
+        let isMatchReady = false;
 
         function setGameMode(mode) {
             gameMode = mode;
@@ -386,6 +392,8 @@
             }
 
             update(opponent) {
+                if (!isMatchReady) return;
+
                 if (this.isBot && gameState === 'PLAYING') {
                     this.runAIBot(opponent);
                 }
@@ -423,7 +431,7 @@
 
                 if (this.attackCooldown > 0) {
                     this.attackCooldown--;
-                    if (this.isAttacking && !this.hasHitOpponent) {
+                    if (this.isAttacking && !this.hasHitOpponent && (gameMode === 'pve' || this.id === myRole)) {
                         this.executeHitCheck(opponent);
                     }
                 } else {
@@ -510,6 +518,7 @@
                     this.attackCooldown = 22;
                     this.rotation = this.facingRight ? 0.6 : -0.6;
                     audio.playSwoosh();
+                    floatTexts.push(new FloatingText(this.x, this.y - 80, 'JUMP KICK!', '#ff9800', 28));
                 } else {
                     this.attackType = 'peck';
                     this.attackCooldown = 16;
@@ -523,23 +532,26 @@
 
                 this.energy = 0;
                 updateEnergyUI(this.id, 0);
+
                 this.isUltimate = true;
                 this.isAttacking = true;
                 this.attackType = 'ultimate';
                 this.attackCooldown = 50;
                 this.hasHitOpponent = false;
+
                 audio.playUlt();
                 screenShake = 30;
+
                 const dashDir = this.facingRight ? 1 : -1;
                 this.vx = dashDir * 25;
                 this.vy = -8;
+
                 floatTexts.push(new FloatingText(this.x, this.y - 110, '⚡ พายุเดือยทองเพลิงสะท้านภพ ⚡', '#00ffff', 34));
             }
 
             executeHitCheck(opponent) {
-                if (gameMode === 'online' && this.id !== myRole) return;
-
                 let hitBox = { x: 0, y: 0, w: 0, h: 0 };
+
                 if (this.attackType === 'ultimate') {
                     const reachX = this.facingRight ? this.x : this.x - 140;
                     hitBox = { x: reachX, y: this.y - 105, w: 180, h: 100 };
@@ -559,28 +571,30 @@
                 ) {
                     this.hasHitOpponent = true;
                     const isUlt = (this.attackType === 'ultimate');
-                    let dmg = isUlt ? 40 : (this.attackType === 'jumpkick' ? 9 : 5);
-
-                    opponent.applyDamageLocally(dmg, this.facingRight ? 18 : -18, isUlt, this.attackType === 'jumpkick' || isUlt);
-
-                    if (!isUlt) this.gainEnergy(25);
-                    this.registerCombo();
+                    let dmg = isUlt ? 85 : (this.attackType === 'jumpkick' ? 18 : 10);
 
                     if (gameMode === 'online') {
-                        socket.emit('force-take-damage', {
+                        if (!isUlt) {
+                            this.gainEnergy(25);
+                        }
+                        socket.emit('player-attack', {
                             roomId: currentRoom,
-                            targetId: opponent.id,
+                            attackType: this.attackType,
                             damage: dmg,
-                            knockback: this.facingRight ? 18 : -18,
-                            isUltimate: isUlt,
-                            isHeavy: this.attackType === 'jumpkick' || isUlt,
-                            attackerEnergy: this.energy
+                            attackerEnergy: this.energy,
+                            targetRole: opponent.id
                         });
+                    } else {
+                        opponent.takeDamage(dmg, this.facingRight ? 18 : -18, this, isUlt, this.attackType === 'jumpkick' || isUlt);
+                        if (!isUlt) {
+                            this.gainEnergy(25);
+                        }
+                        this.registerCombo();
                     }
                 }
             }
 
-            applyDamageLocally(amount, knockbackX, isUlt = false, isHeavy = false) {
+            takeDamage(amount, knockbackX, attacker, isUlt = false, isHeavy = false) {
                 if (this.isBlocking && !isUlt) {
                     amount *= 0.2;
                     knockbackX *= 0.3;
@@ -600,10 +614,6 @@
                 this.hp = Math.max(0, this.hp - amount);
                 this.vx = knockbackX;
                 updateHealthUI(this.id, this.hp, this.maxHp);
-
-                if (this.hp <= 0 && gameState === 'PLAYING') {
-                    endGame();
-                }
             }
 
             gainEnergy(amt) {
@@ -718,11 +728,8 @@
             }
         }
 
-        // สร้างตัวละครเริ่มต้นทันทีตั้งแต่เปิดเว็บ ป้องกันตัวละครหาย
         let p1 = new Rooster('p1', 200, 'red', true, false);
         let p2 = new Rooster('p2', 750, 'blue', false, false);
-        p1.hp = 250; p1.maxHp = 250;
-        p2.hp = 250; p2.maxHp = 250;
 
         function drawArena() {
             const skyGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
@@ -749,10 +756,10 @@
             dirtGrad.addColorStop(0.3, '#92400e');
             dirtGrad.addColorStop(1, '#451a03');
             ctx.fillStyle = dirtGrad;
-            dirtGrad.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
+            ctx.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
 
             ctx.fillStyle = '#92400e';
-            dirtGrad.fillRect(20, GROUND_Y - 170, 24, 170);
+            ctx.fillRect(20, GROUND_Y - 170, 24, 170);
             ctx.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
         }
 
@@ -803,41 +810,42 @@
             }
         });
 
-        socket.on('update-players', (data) => {
+        socket.on('update-players', (serverPlayers) => {
             if (gameMode !== 'online') return;
-            let target = (data.role === 'p1') ? p1 : p2;
-            target.targetX = data.x;
-            target.targetY = data.y;
-            target.facingRight = data.facingRight;
-            target.isBlocking = data.isBlocking;
-            target.isAttacking = data.isAttacking;
-            target.isUltimate = data.isUltimate;
-            target.attackType = data.attackType;
+            for (let socketId in serverPlayers) {
+                let data = serverPlayers[socketId];
+                let target = (data.role === 'p1') ? p1 : p2;
+                
+                if (target.id !== myRole) {
+                    target.targetX = data.x;
+                    target.targetY = data.y;
+                    target.facingRight = data.facingRight;
+                    target.isBlocking = data.isBlocking;
+                    target.isAttacking = data.isAttacking;
+                    target.isUltimate = data.isUltimate;
+                    target.attackType = data.attackType;
+                }
+                target.hp = data.hp;
+                target.energy = data.energy;
+
+                updateHealthUI(target.id, target.hp, target.maxHp);
+                updateEnergyUI(target.id, target.energy);
+            }
         });
 
-        socket.on('sync-damage', (data) => {
+        socket.on('apply-hit', (data) => {
             if (gameMode !== 'online') return;
-            let target = (data.targetId === 'p1') ? p1 : p2;
-            let attacker = (data.targetId === 'p1') ? p2 : p1;
+            let target = (data.targetRole === 'p1') ? p1 : p2;
+            target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, null, data.isUltimate, false);
+        });
 
-            target.applyDamageLocally(data.damage, data.knockback, data.isUltimate, data.isHeavy);
-            attacker.energy = data.attackerEnergy;
-            updateEnergyUI(attacker.id, attacker.energy);
+        socket.on('show-effect', (data) => {
+            floatTexts.push(new FloatingText(data.x, data.y - 50, `-${data.damage}`, data.isUltimate ? '#00e5ff' : '#ffeb3b', 24));
         });
 
         socket.on('room-full', () => {
             alert('ห้องนี้เต็มแล้ว (มีผู้เล่นครบ 2 คนแล้วครับ)');
             returnToHome();
-        });
-
-        socket.on('update-timer', (timeLeft) => {
-            matchTimer = timeLeft;
-            document.getElementById('timer').innerText = matchTimer;
-            if (matchTimer <= 0) endGame();
-        });
-
-        socket.on('time-up', () => {
-            endGame();
         });
 
         let lastSendTime = 0;
@@ -861,12 +869,13 @@
                 }
 
                 let now = Date.now();
-                if (now - lastSendTime > 30) {
+                if (now - lastSendTime > 25) {
                     socket.emit('player-action', {
                         roomId: currentRoom,
-                        role: myRole,
                         x: me.x,
                         y: me.y,
+                        hp: me.hp,
+                        energy: me.energy,
                         facingRight: me.facingRight,
                         isBlocking: me.isBlocking,
                         isAttacking: me.isAttacking,
@@ -887,6 +896,7 @@
 
         let gameState = 'MENU';
         let matchTimer = 60;
+        let timerId = null;
 
         function startMatch() {
             audio.init();
@@ -898,14 +908,14 @@
             }
 
             currentRoom = roomInput || 'bot-room';
+            isMatchReady = false;
 
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('gameover-overlay').classList.add('hidden');
 
             const isBotMode = (gameMode === 'pve');
-            p1.x = 200; p1.y = GROUND_Y; p1.hp = 250; p1.maxHp = 250; p1.energy = 0;
-            p2.x = 750; p2.y = GROUND_Y; p2.hp = 250; p2.maxHp = 250; p2.energy = 0;
-            p2.isBot = isBotMode;
+            p1 = new Rooster('p1', 200, 'red', true, false);
+            p2 = new Rooster('p2', 750, 'blue', false, isBotMode);
 
             updateHealthUI('p1', 250, 250);
             updateHealthUI('p2', 250, 250);
@@ -922,16 +932,16 @@
                 document.getElementById('waiting-overlay').classList.remove('hidden');
                 socket.emit('join-room', currentRoom);
             } else {
-                startTimerPvE();
+                isMatchReady = true;
+                startTimer();
                 document.getElementById('my-role-badge').innerText = "🎮 เล่นกับ AI (P1)";
             }
         }
 
-        let pveTimerId = null;
-        function startTimerPvE() {
-            clearInterval(pveTimerId);
-            pveTimerId = setInterval(() => {
-                if (gameState === 'PLAYING' && gameMode === 'pve') {
+        function startTimer() {
+            clearInterval(timerId);
+            timerId = setInterval(() => {
+                if (gameState === 'PLAYING' && isMatchReady) {
                     matchTimer--;
                     document.getElementById('timer').innerText = matchTimer;
                     if (matchTimer <= 0) endGame();
@@ -939,14 +949,35 @@
             }, 1000);
         }
 
-        socket.on('start-match-instantly', () => {
+        socket.on('start-countdown', () => {
             document.getElementById('waiting-overlay').classList.add('hidden');
+            document.getElementById('countdown-overlay').classList.remove('hidden');
+            
+            let count = 3;
+            const countText = document.getElementById('countdown-text');
+            countText.innerText = count;
+
+            let cdTimer = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    countText.innerText = count;
+                } else if (count === 0) {
+                    countText.innerText = 'FIGHT! ⚔️';
+                } else {
+                    clearInterval(cdTimer);
+                    document.getElementById('countdown-overlay').classList.add('hidden');
+                    isMatchReady = true;
+                    startTimer();
+                }
+            }, 1000);
         });
 
         function returnToHome() {
-            clearInterval(pveTimerId);
+            clearInterval(timerId);
             gameState = 'MENU';
+            isMatchReady = false;
             document.getElementById('waiting-overlay').classList.add('hidden');
+            document.getElementById('countdown-overlay').classList.add('hidden');
             document.getElementById('gameover-overlay').classList.add('hidden');
             document.getElementById('lobby-screen').classList.remove('hidden');
             if (gameMode === 'online') location.reload();
@@ -954,7 +985,7 @@
 
         function endGame() {
             gameState = 'GAMEOVER';
-            clearInterval(pveTimerId);
+            clearInterval(timerId);
 
             const title = document.getElementById('winner-text');
             const sub = document.getElementById('winner-sub');
@@ -994,7 +1025,7 @@
             p1.update(p2);
             p2.update(p1);
 
-            if (gameState === 'PLAYING' && (p1.hp <= 0 || p2.hp <= 0)) {
+            if (gameState === 'PLAYING' && isMatchReady && (p1.hp <= 0 || p2.hp <= 0)) {
                 endGame();
             }
 

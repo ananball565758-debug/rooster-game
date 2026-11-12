@@ -13,6 +13,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// เก็บข้อมูลห้องและผู้เล่น
 let rooms = {};
 
 io.on('connection', (socket) => {
@@ -22,7 +23,7 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         
         if (!rooms[roomId]) {
-            rooms[roomId] = { p1: null, p2: null, timeLeft: 60, timer: null };
+            rooms[roomId] = { p1: null, p2: null, players: {} };
         }
 
         let room = rooms[roomId];
@@ -35,39 +36,68 @@ io.on('connection', (socket) => {
             room.p2 = socket.id;
             role = 'p2';
         } else {
+            // ถ้าเต็มหรือไอดีซ้ำ
             socket.emit('room-full');
             return;
         }
-        
+
+        room.players[socket.id] = { role: role, x: role === 'p1' ? 200 : 750, hp: 250, energy: 0 };
         socket.emit('assigned-role', { role: role });
 
-        if (room.p1 && room.p2) {
-            io.to(roomId).emit('start-match-instantly');
+        console.log(`ห้อง ${roomId} -> P1: ${room.p1 ? 'มีแล้ว' : 'ว่าง'}, P2: ${room.p2 ? 'มีแล้ว' : 'ว่าง'}`);
 
-            if (!rooms[roomId].timer) {
-                rooms[roomId].timeLeft = 60;
-                rooms[roomId].timer = setInterval(() => {
-                    if (rooms[roomId] && rooms[roomId].timeLeft > 0) {
-                        rooms[roomId].timeLeft--;
-                        io.to(roomId).emit('update-timer', rooms[roomId].timeLeft);
-                    } else {
-                        if (rooms[roomId] && rooms[roomId].timer) {
-                            clearInterval(rooms[roomId].timer);
-                            rooms[roomId].timer = null;
-                        }
-                        io.to(roomId).emit('time-up');
-                    }
-                }, 1000);
-            }
+        // ถ้ามีผู้เล่นครบ 2 คนแล้ว เริ่มนับถอยหลังเข้าเกมพร้อมกันทันที
+        if (room.p1 && room.p2) {
+            console.log(`เริ่มเกมในห้อง: ${roomId}`);
+            io.to(roomId).emit('start-countdown');
         }
     });
 
     socket.on('player-action', (data) => {
-        socket.to(data.roomId).emit('update-players', data);
+        let room = rooms[data.roomId];
+        if (room && room.players[socket.id]) {
+            let p = room.players[socket.id];
+            p.x = data.x;
+            p.y = data.y;
+            p.hp = data.hp;
+            p.energy = data.energy;
+            p.facingRight = data.facingRight;
+            p.isBlocking = data.isBlocking;
+            p.isAttacking = data.isAttacking;
+            p.isUltimate = data.isUltimate;
+            p.attackType = data.attackType;
+
+            socket.to(data.roomId).emit('update-players', room.players);
+        }
     });
 
-    socket.on('force-take-damage', (data) => {
-        socket.to(data.roomId).emit('sync-damage', data);
+    socket.on('player-attack', (data) => {
+        let room = rooms[data.roomId];
+        if (room && room.players[socket.id]) {
+            let attacker = room.players[socket.id];
+            let targetSocketId = (socket.id === room.p1) ? room.p2 : room.p1;
+            let target = room.players[targetSocketId];
+
+            if (data.attackType !== 'ultimate') {
+                attacker.energy = Math.min(100, (attacker.energy || 0) + 25);
+            } else {
+                attacker.energy = 0;
+            }
+
+            if (target) {
+                target.hp = Math.max(0, target.hp - data.damage);
+            }
+
+            let targetRole = (socket.id === room.p1) ? 'p2' : 'p1';
+            
+            io.to(data.roomId).emit('apply-hit', { 
+                targetRole: targetRole, 
+                damage: data.damage, 
+                isUltimate: data.attackType === 'ultimate' 
+            });
+
+            io.to(data.roomId).emit('update-players', room.players);
+        }
     });
 
     socket.on('disconnect', () => {
@@ -75,7 +105,6 @@ io.on('connection', (socket) => {
         for (let roomId in rooms) {
             let room = rooms[roomId];
             if (room.p1 === socket.id || room.p2 === socket.id) {
-                if (room.timer) clearInterval(room.timer);
                 delete rooms[roomId];
                 io.to(roomId).emit('room-full');
             }
