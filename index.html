@@ -518,7 +518,6 @@
                     this.attackCooldown = 22;
                     this.rotation = this.facingRight ? 0.6 : -0.6;
                     audio.playSwoosh();
-                    floatTexts.push(new FloatingText(this.x, this.y - 80, 'JUMP KICK!', '#ff9800', 28));
                 } else {
                     this.attackType = 'peck';
                     this.attackCooldown = 16;
@@ -571,30 +570,24 @@
                 ) {
                     this.hasHitOpponent = true;
                     const isUlt = (this.attackType === 'ultimate');
-                    let dmg = isUlt ? 85 : (this.attackType === 'jumpkick' ? 18 : 10);
+                    let dmg = isUlt ? 40 : (this.attackType === 'jumpkick' ? 9 : 5);
 
                     if (gameMode === 'online') {
-                        if (!isUlt) {
-                            this.gainEnergy(25);
-                        }
                         socket.emit('player-attack', {
                             roomId: currentRoom,
                             attackType: this.attackType,
                             damage: dmg,
-                            attackerEnergy: this.energy,
                             targetRole: opponent.id
                         });
                     } else {
-                        opponent.takeDamage(dmg, this.facingRight ? 18 : -18, this, isUlt, this.attackType === 'jumpkick' || isUlt);
-                        if (!isUlt) {
-                            this.gainEnergy(25);
-                        }
+                        opponent.takeDamage(dmg, this.facingRight ? 18 : -18, isUlt, this.attackType === 'jumpkick' || isUlt);
+                        if (!isUlt) this.gainEnergy(25);
                         this.registerCombo();
                     }
                 }
             }
 
-            takeDamage(amount, knockbackX, attacker, isUlt = false, isHeavy = false) {
+            takeDamage(amount, knockbackX, isUlt = false, isHeavy = false) {
                 if (this.isBlocking && !isUlt) {
                     amount *= 0.2;
                     knockbackX *= 0.3;
@@ -756,11 +749,11 @@
             dirtGrad.addColorStop(0.3, '#92400e');
             dirtGrad.addColorStop(1, '#451a03');
             ctx.fillStyle = dirtGrad;
-            ctx.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
+            dirtGrad.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
 
             ctx.fillStyle = '#92400e';
-            ctx.fillRect(20, GROUND_Y - 170, 24, 170);
-            ctx.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
+            dirtGrad.fillRect(20, GROUND_Y - 170, 24, 170);
+            dirtGrad.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
         }
 
         function updateHealthUI(player, hp, maxHp) {
@@ -810,6 +803,7 @@
             }
         });
 
+        // รับข้อมูลตำแหน่ง HP และ SP ที่คำนวณจาก Server กลางเท่านั้น
         socket.on('update-players', (serverPlayers) => {
             if (gameMode !== 'online') return;
             for (let socketId in serverPlayers) {
@@ -825,6 +819,7 @@
                     target.isUltimate = data.isUltimate;
                     target.attackType = data.attackType;
                 }
+                
                 target.hp = data.hp;
                 target.energy = data.energy;
 
@@ -836,11 +831,7 @@
         socket.on('apply-hit', (data) => {
             if (gameMode !== 'online') return;
             let target = (data.targetRole === 'p1') ? p1 : p2;
-            target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, null, data.isUltimate, false);
-        });
-
-        socket.on('show-effect', (data) => {
-            floatTexts.push(new FloatingText(data.x, data.y - 50, `-${data.damage}`, data.isUltimate ? '#00e5ff' : '#ffeb3b', 24));
+            target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, data.isUltimate, false);
         });
 
         socket.on('room-full', () => {
@@ -874,8 +865,6 @@
                         roomId: currentRoom,
                         x: me.x,
                         y: me.y,
-                        hp: me.hp,
-                        energy: me.energy,
                         facingRight: me.facingRight,
                         isBlocking: me.isBlocking,
                         isAttacking: me.isAttacking,

@@ -13,7 +13,6 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// เก็บข้อมูลห้องและผู้เล่น
 let rooms = {};
 
 io.on('connection', (socket) => {
@@ -23,7 +22,7 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         
         if (!rooms[roomId]) {
-            rooms[roomId] = { p1: null, p2: null, players: {} };
+            rooms[roomId] = { p1: null, p2: null, players: {}, timeLeft: 60, timer: null };
         }
 
         let room = rooms[roomId];
@@ -36,67 +35,108 @@ io.on('connection', (socket) => {
             room.p2 = socket.id;
             role = 'p2';
         } else {
-            // ถ้าเต็มหรือไอดีซ้ำ
             socket.emit('room-full');
             return;
         }
 
-        room.players[socket.id] = { role: role, x: role === 'p1' ? 200 : 750, hp: 250, energy: 0 };
+        // กำหนดค่าเริ่มต้นของผู้เล่นแต่ละคนบน Server
+        room.players[socket.id] = { 
+            role: role, 
+            x: role === 'p1' ? 200 : 750, 
+            y: 460, 
+            hp: 250, 
+            maxHp: 250,
+            energy: 0,
+            facingRight: role === 'p1',
+            isBlocking: false,
+            isAttacking: false,
+            isUltimate: false,
+            attackType: null
+        };
+
         socket.emit('assigned-role', { role: role });
 
-        console.log(`ห้อง ${roomId} -> P1: ${room.p1 ? 'มีแล้ว' : 'ว่าง'}, P2: ${room.p2 ? 'มีแล้ว' : 'ว่าง'}`);
-
-        // ถ้ามีผู้เล่นครบ 2 คนแล้ว เริ่มนับถอยหลังเข้าเกมพร้อมกันทันที
+        // เมื่อครบ 2 คน เริ่มเกมและจับเวลา
         if (room.p1 && room.p2) {
-            console.log(`เริ่มเกมในห้อง: ${roomId}`);
-            io.to(roomId).emit('start-countdown');
+            io.to(roomId).emit('start-match-instantly');
+
+            if (!room.timer) {
+                room.timeLeft = 60;
+                room.timer = setInterval(() => {
+                    if (room && room.timeLeft > 0) {
+                        room.timeLeft--;
+                        io.to(roomId).emit('update-timer', room.timeLeft);
+                    } else {
+                        if (room && room.timer) {
+                            clearInterval(room.timer);
+                            room.timer = null;
+                        }
+                        io.to(roomId).emit('time-up');
+                    }
+                }, 1000);
+            }
         }
     });
 
+    // รับตำแหน่งและการเคลื่อนไหวจากผู้เล่น แล้วกระจายให้อีกฝั่งเห็น
     socket.on('player-action', (data) => {
         let room = rooms[data.roomId];
         if (room && room.players[socket.id]) {
             let p = room.players[socket.id];
             p.x = data.x;
             p.y = data.y;
-            p.hp = data.hp;
-            p.energy = data.energy;
             p.facingRight = data.facingRight;
             p.isBlocking = data.isBlocking;
             p.isAttacking = data.isAttacking;
             p.isUltimate = data.isUltimate;
             p.attackType = data.attackType;
 
-            socket.to(data.roomId).emit('update-players', room.players);
+            socket.to(data.roomId).emit('update-players', {
+                role: p.role,
+                x: p.x,
+                y: p.y,
+                facingRight: p.facingRight,
+                isBlocking: p.isBlocking,
+                isAttacking: p.isAttacking,
+                isUltimate: p.isUltimate,
+                attackType: p.attackType
+            });
         }
     });
 
-    socket.on('player-attack', (data) => {
+    // ให้ Server เป็นคนกลางคำนวณการหักเลือด ป้องกันเลือดเด้งไม่ตรงกัน
+    socket.on('request-damage', (data) => {
         let room = rooms[data.roomId];
-        if (room && room.players[socket.id]) {
-            let attacker = room.players[socket.id];
-            let targetSocketId = (socket.id === room.p1) ? room.p2 : room.p1;
-            let target = room.players[targetSocketId];
+        if (!room) return;
 
-            if (data.attackType !== 'ultimate') {
+        let targetSocketId = (data.targetRole === 'p1') ? room.p1 : room.p2;
+        let attackerSocketId = (data.targetRole === 'p1') ? room.p2 : room.p1;
+
+        let target = room.players[targetSocketId];
+        let attacker = room.players[attackerSocketId];
+
+        if (target && attacker) {
+            // หักเลือดบน Server
+            target.hp = Math.max(0, target.hp - data.damage);
+            
+            // สะสมเกจพลัง (ถ้าไม่ใช่ท่าไม้ตาย)
+            if (!data.isUltimate) {
                 attacker.energy = Math.min(100, (attacker.energy || 0) + 25);
             } else {
                 attacker.energy = 0;
             }
 
-            if (target) {
-                target.hp = Math.max(0, target.hp - data.damage);
-            }
-
-            let targetRole = (socket.id === room.p1) ? 'p2' : 'p1';
-            
-            io.to(data.roomId).emit('apply-hit', { 
-                targetRole: targetRole, 
-                damage: data.damage, 
-                isUltimate: data.attackType === 'ultimate' 
+            // ส่งผลลัพธ์เลือดและเกจที่ถูกต้องกลับไปให้ผู้เล่นทุกคนในห้องตรงกันเป๊ะๆ
+            io.to(data.roomId).emit('sync-exact-state', {
+                targetRole: target.role,
+                targetHp: target.hp,
+                attackerRole: attacker.role,
+                attackerEnergy: attacker.energy,
+                damage: data.damage,
+                knockback: data.knockback,
+                isUltimate: data.isUltimate,
+                isHeavy: data.isHeavy
             });
-
-            io.to(data.roomId).emit('update-players', room.players);
         }
     });
 
@@ -105,6 +145,7 @@ io.on('connection', (socket) => {
         for (let roomId in rooms) {
             let room = rooms[roomId];
             if (room.p1 === socket.id || room.p2 === socket.id) {
+                if (room.timer) clearInterval(room.timer);
                 delete rooms[roomId];
                 io.to(roomId).emit('room-full');
             }
