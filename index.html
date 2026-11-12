@@ -115,15 +115,10 @@
         <canvas id="gameCanvas" width="1024" height="576" class="w-full h-full object-contain"></canvas>
 
         <div id="waiting-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-4 text-center z-40 hidden">
-            <h2 class="text-3xl sm:text-5xl font-black text-amber-400 mb-3 animate-pulse text-stroke-2">⏳ กำลังรอเพื่อนเข้าห้อง...</h2>
+            <h2 class="text-3xl sm:text-5xl font-black text-amber-400 mb-3 animate-pulse text-stroke-2">⏳ กำลังรอผู้เล่นคนที่ 2...</h2>
             <p id="room-code-display" class="text-sm sm:text-lg text-slate-300 mb-6 font-semibold">รหัสห้องของคุณ: -</p>
             <div class="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-6"></div>
             <button onclick="returnToHome()" class="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow cursor-pointer">ยกเลิก / ออกจากห้อง</button>
-        </div>
-
-        <div id="countdown-overlay" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-4 text-center z-40 hidden">
-            <h2 id="countdown-text" class="text-6xl sm:text-9xl font-black text-amber-400 animate-bounce text-stroke-2">3</h2>
-            <p class="text-xl sm:text-3xl text-white font-bold mt-4 text-stroke-1">เตรียมตัวประลองพร้อมกัน!</p>
         </div>
 
         <div id="gameover-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-4 text-center z-30 hidden">
@@ -158,10 +153,9 @@
     <script>
         const socket = io();
         let currentRoom = '';
-        let myRole = ''; 
+        let myRole = 'p1'; 
         let gameMode = 'online';
         let botDifficulty = 'easy';
-        let isMatchReady = true; // ตั้งค่าเริ่มต้นให้เป็น true เพื่อให้เรนเดอร์ตัวละครทันที
 
         function setGameMode(mode) {
             gameMode = mode;
@@ -392,8 +386,6 @@
             }
 
             update(opponent) {
-                if (!isMatchReady) return;
-
                 if (this.isBot && gameState === 'PLAYING') {
                     this.runAIBot(opponent);
                 }
@@ -726,6 +718,7 @@
             }
         }
 
+        // สร้างตัวละครเริ่มต้นทันทีตั้งแต่เปิดเว็บ ป้องกันตัวละครหาย
         let p1 = new Rooster('p1', 200, 'red', true, false);
         let p2 = new Rooster('p2', 750, 'blue', false, false);
         p1.hp = 250; p1.maxHp = 250;
@@ -905,16 +898,14 @@
             }
 
             currentRoom = roomInput || 'bot-room';
-            isMatchReady = true; // บังคับให้พร้อมแสดงผลทันที
 
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('gameover-overlay').classList.add('hidden');
 
             const isBotMode = (gameMode === 'pve');
-            p1 = new Rooster('p1', 200, 'red', true, false);
-            p2 = new Rooster('p2', 750, 'blue', false, isBotMode);
-            p1.hp = 250; p1.maxHp = 250;
-            p2.hp = 250; p2.maxHp = 250;
+            p1.x = 200; p1.y = GROUND_Y; p1.hp = 250; p1.maxHp = 250; p1.energy = 0;
+            p2.x = 750; p2.y = GROUND_Y; p2.hp = 250; p2.maxHp = 250; p2.energy = 0;
+            p2.isBot = isBotMode;
 
             updateHealthUI('p1', 250, 250);
             updateHealthUI('p2', 250, 250);
@@ -928,7 +919,6 @@
 
             if (gameMode === 'online') {
                 document.getElementById('room-code-display').innerText = `รหัสห้องของคุณ: ${currentRoom}`;
-                // เปิดให้เห็นจอเกมทันที ไม่ต้องรอหน้าต่างค้าง
                 document.getElementById('waiting-overlay').classList.remove('hidden');
                 socket.emit('join-room', currentRoom);
             } else {
@@ -941,7 +931,7 @@
         function startTimerPvE() {
             clearInterval(pveTimerId);
             pveTimerId = setInterval(() => {
-                if (gameState === 'PLAYING' && isMatchReady && gameMode === 'pve') {
+                if (gameState === 'PLAYING' && gameMode === 'pve') {
                     matchTimer--;
                     document.getElementById('timer').innerText = matchTimer;
                     if (matchTimer <= 0) endGame();
@@ -949,34 +939,14 @@
             }, 1000);
         }
 
-        socket.on('start-countdown', () => {
+        socket.on('start-match-instantly', () => {
             document.getElementById('waiting-overlay').classList.add('hidden');
-            document.getElementById('countdown-overlay').classList.remove('hidden');
-            
-            let count = 3;
-            const countText = document.getElementById('countdown-text');
-            countText.innerText = count;
-
-            let cdTimer = setInterval(() => {
-                count--;
-                if (count > 0) {
-                    countText.innerText = count;
-                } else if (count === 0) {
-                    countText.innerText = 'FIGHT! ⚔️';
-                } else {
-                    clearInterval(cdTimer);
-                    document.getElementById('countdown-overlay').classList.add('hidden');
-                    isMatchReady = true;
-                }
-            }, 1000);
         });
 
         function returnToHome() {
             clearInterval(pveTimerId);
             gameState = 'MENU';
-            isMatchReady = true;
             document.getElementById('waiting-overlay').classList.add('hidden');
-            document.getElementById('countdown-overlay').classList.add('hidden');
             document.getElementById('gameover-overlay').classList.add('hidden');
             document.getElementById('lobby-screen').classList.remove('hidden');
             if (gameMode === 'online') location.reload();
@@ -1024,7 +994,7 @@
             p1.update(p2);
             p2.update(p1);
 
-            if (gameState === 'PLAYING' && isMatchReady && (p1.hp <= 0 || p2.hp <= 0)) {
+            if (gameState === 'PLAYING' && (p1.hp <= 0 || p2.hp <= 0)) {
                 endGame();
             }
 
