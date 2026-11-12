@@ -544,7 +544,7 @@
                 floatTexts.push(new FloatingText(this.x, this.y - 110, '⚡ พายุเดือยทองเพลิงสะท้านภพ ⚡', '#00ffff', 34));
             }
 
-            // ⭐ เครื่องใครเครื่องมันเช็กฮิตบ็อกซ์การตีของตัวเอง แล้วสั่งลดเลือดฝั่งตรงข้ามทันที
+            // ⭐ เครื่องใครเครื่องมันเช็กฮิตบ็อกซ์ แล้วบังคับลดเลือดเป้าหมายทันทีทั้งสองจอ
             executeHitCheck(opponent) {
                 if (gameMode === 'online' && this.id !== myRole) return;
 
@@ -570,13 +570,11 @@
                     const isUlt = (this.attackType === 'ultimate');
                     let dmg = isUlt ? 40 : (this.attackType === 'jumpkick' ? 9 : 5);
 
-                    // หักเลือดเป้าหมายทันทีบนเครื่องเรา
                     opponent.applyDamageLocally(dmg, this.facingRight ? 18 : -18, isUlt, this.attackType === 'jumpkick' || isUlt);
 
                     if (!isUlt) this.gainEnergy(25);
                     this.registerCombo();
 
-                    // ส่งคำสั่งไปบังคับลดเลือดฝั่งเพื่อนทันทีแบบไม่ต้องรอ Server คำนวณ
                     if (gameMode === 'online') {
                         socket.emit('force-take-damage', {
                             roomId: currentRoom,
@@ -762,7 +760,7 @@
             dirtGrad.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
 
             ctx.fillStyle = '#92400e';
-            ctx.fillRect(20, GROUND_Y - 170, 24, 170);
+            dirtGrad.fillRect(20, GROUND_Y - 170, 24, 170);
             ctx.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
         }
 
@@ -813,7 +811,6 @@
             }
         });
 
-        // รับพิกัดการเดินปกติ
         socket.on('update-players', (data) => {
             if (gameMode !== 'online') return;
             let target = (data.role === 'p1') ? p1 : p2;
@@ -826,7 +823,7 @@
             target.attackType = data.attackType;
         });
 
-        // ⭐ รับคำสั่งบังคับลดเลือดจากเครื่องเพื่อนโดยตรงทันทีแบบ 100%
+        // ⭐ รับคำสั่งบังคับลดเลือดข้ามเครื่องทันทีแบบเบ็ดเสร็จ
         socket.on('sync-damage', (data) => {
             if (gameMode !== 'online') return;
             let target = (data.targetId === 'p1') ? p1 : p2;

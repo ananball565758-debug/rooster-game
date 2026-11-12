@@ -64,12 +64,12 @@ io.on('connection', (socket) => {
         }
     });
 
-    // ส่งพิกัดการเดินของตัวละครให้ฝ่ายตรงข้ามเห็นปกติ
+    // ส่งพิกัดการเดินปกติ
     socket.on('player-action', (data) => {
         socket.to(data.roomId).emit('update-players', data);
     });
 
-    // เมื่อใครตีโดน ให้ Server ส่งคำสั่งหักเลือดไปบอกอีกฝั่งทันทีแบบตรงไปตรงมา
+    // ⭐ บังคับหักเลือดข้ามเน็ตทันทีโดย Server เป็นสะพานส่งคำสั่งให้
     socket.on('force-take-damage', (data) => {
         socket.to(data.roomId).emit('sync-damage', data);
     });
