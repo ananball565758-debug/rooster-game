@@ -64,14 +64,14 @@ io.on('connection', (socket) => {
         }
     });
 
-    // ให้ P1 เป็นศูนย์กลางรับส่งข้อมูลการเคลื่อนไหวและเลือด
-    socket.on('p1-sync-data', (data) => {
-        socket.to(data.roomId).emit('sync-from-p1', data);
+    // ส่งพิกัดการเดินของตัวละครให้ฝ่ายตรงข้ามเห็นปกติ
+    socket.on('player-action', (data) => {
+        socket.to(data.roomId).emit('update-players', data);
     });
 
-    // ให้ P2 ส่งข้อมูลการกระทำไปบอก P1
-    socket.on('p2-action', (data) => {
-        socket.to(data.roomId).emit('sync-p2-action', data);
+    // เมื่อใครตีโดน ให้ Server ส่งคำสั่งหักเลือดไปบอกอีกฝั่งทันทีแบบตรงไปตรงมา
+    socket.on('force-take-damage', (data) => {
+        socket.to(data.roomId).emit('sync-damage', data);
     });
 
     socket.on('disconnect', () => {
