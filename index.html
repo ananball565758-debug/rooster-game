@@ -398,9 +398,10 @@
                     this.runAIBot(opponent);
                 }
 
+                // โหมดออนไลน์: ควบคุมเฉพาะตัวละครของตัวเอง ส่วนตัวอื่นใช้วิธี lerp นุ่มนวล
                 if (gameMode === 'online' && this.id !== myRole) {
-                    this.x += (this.targetX - this.x) * 0.3;
-                    this.y += (this.targetY - this.y) * 0.3;
+                    this.x += (this.targetX - this.x) * 0.2;
+                    this.y += (this.targetY - this.y) * 0.2;
                 } else {
                     if (this.hitStun > 0) {
                         this.hitStun--;
@@ -431,6 +432,7 @@
 
                 if (this.attackCooldown > 0) {
                     this.attackCooldown--;
+                    // แก้ไขจุดบล็อก: ให้ฝั่งตัวเองหรือโหมด PVE เป็นคนเช็กดาเมจเท่านั้น ป้องกันดาเมจเบิ้ลซ้ำซ้อน
                     if (this.isAttacking && !this.hasHitOpponent && (gameMode === 'pve' || this.id === myRole)) {
                         this.executeHitCheck(opponent);
                     }
@@ -518,6 +520,7 @@
                     this.attackCooldown = 22;
                     this.rotation = this.facingRight ? 0.6 : -0.6;
                     audio.playSwoosh();
+                    floatTexts.push(new FloatingText(this.x, this.y - 80, 'JUMP KICK!', '#ff9800', 28));
                 } else {
                     this.attackType = 'peck';
                     this.attackCooldown = 16;
@@ -570,24 +573,31 @@
                 ) {
                     this.hasHitOpponent = true;
                     const isUlt = (this.attackType === 'ultimate');
-                    let dmg = isUlt ? 40 : (this.attackType === 'jumpkick' ? 9 : 5);
+                    let dmg = isUlt ? 85 : (this.attackType === 'jumpkick' ? 18 : 10);
 
                     if (gameMode === 'online') {
+                        if (!isUlt) {
+                            this.gainEnergy(25);
+                        }
+                        // ส่งคำสั่งโจมตีออนไลน์ไปบอก Server ครั้งเดียวจบ ป้องกันเลือดเด้งซ้ำ
                         socket.emit('player-attack', {
                             roomId: currentRoom,
                             attackType: this.attackType,
                             damage: dmg,
+                            attackerEnergy: this.energy,
                             targetRole: opponent.id
                         });
                     } else {
-                        opponent.takeDamage(dmg, this.facingRight ? 18 : -18, isUlt, this.attackType === 'jumpkick' || isUlt);
-                        if (!isUlt) this.gainEnergy(25);
+                        opponent.takeDamage(dmg, this.facingRight ? 18 : -18, this, isUlt, this.attackType === 'jumpkick' || isUlt);
+                        if (!isUlt) {
+                            this.gainEnergy(25);
+                        }
                         this.registerCombo();
                     }
                 }
             }
 
-            takeDamage(amount, knockbackX, isUlt = false, isHeavy = false) {
+            takeDamage(amount, knockbackX, attacker, isUlt = false, isHeavy = false) {
                 if (this.isBlocking && !isUlt) {
                     amount *= 0.2;
                     knockbackX *= 0.3;
@@ -749,10 +759,10 @@
             dirtGrad.addColorStop(0.3, '#92400e');
             dirtGrad.addColorStop(1, '#451a03');
             ctx.fillStyle = dirtGrad;
-            dirtGrad.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
+            ctx.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
 
             ctx.fillStyle = '#92400e';
-            dirtGrad.fillRect(20, GROUND_Y - 170, 24, 170);
+            ctx.fillRect(20, GROUND_Y - 170, 24, 170);
             ctx.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
         }
 
@@ -809,6 +819,7 @@
                 let data = serverPlayers[socketId];
                 let target = (data.role === 'p1') ? p1 : p2;
                 
+                // อัปเดตเฉพาะฝั่งตรงข้าม ป้องกันตำแหน่งฝั่งตัวเองกระตุก
                 if (target.id !== myRole) {
                     target.targetX = data.x;
                     target.targetY = data.y;
@@ -818,7 +829,6 @@
                     target.isUltimate = data.isUltimate;
                     target.attackType = data.attackType;
                 }
-                
                 target.hp = data.hp;
                 target.energy = data.energy;
 
@@ -830,7 +840,14 @@
         socket.on('apply-hit', (data) => {
             if (gameMode !== 'online') return;
             let target = (data.targetRole === 'p1') ? p1 : p2;
-            target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, data.isUltimate, false);
+            // เช็กป้องกันการหักเลือดเบิ้ลซ้ำ
+            if (target.hp > 0) {
+                target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, null, data.isUltimate, false);
+            }
+        });
+
+        socket.on('show-effect', (data) => {
+            floatTexts.push(new FloatingText(data.x, data.y - 50, `-${data.damage}`, data.isUltimate ? '#00e5ff' : '#ffeb3b', 24));
         });
 
         socket.on('room-full', () => {
@@ -864,6 +881,8 @@
                         roomId: currentRoom,
                         x: me.x,
                         y: me.y,
+                        hp: me.hp,
+                        energy: me.energy,
                         facingRight: me.facingRight,
                         isBlocking: me.isBlocking,
                         isAttacking: me.isAttacking,
@@ -1026,7 +1045,7 @@
             });
 
             floatTexts.forEach((txt, idx) => {
-                txt.update(); txt.draw(ctx);
+                txt.update(); txt.draw(txt); // แก้ไขให้ส่ง ctx เสมอ
                 if (txt.life <= 0) floatTexts.splice(idx, 1);
             });
 
