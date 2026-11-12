@@ -13,6 +13,7 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// เก็บข้อมูลห้องและผู้เล่น
 let rooms = {};
 
 io.on('connection', (socket) => {
@@ -35,28 +36,19 @@ io.on('connection', (socket) => {
             room.p2 = socket.id;
             role = 'p2';
         } else {
+            // ถ้าเต็มหรือไอดีซ้ำ
             socket.emit('room-full');
             return;
         }
 
-        // ⭐ กำหนดตำแหน่งเริ่มต้น x และ y (GROUND_Y = 460) ให้ชัดเจน
-        room.players[socket.id] = { 
-            role: role, 
-            x: role === 'p1' ? 300 : 700, 
-            y: 460, 
-            hp: 500, 
-            maxHp: 500, 
-            energy: 0,
-            facingRight: role === 'p1',
-            isBlocking: false,
-            isAttacking: false,
-            isUltimate: false,
-            attackType: null
-        };
-
+        room.players[socket.id] = { role: role, x: role === 'p1' ? 200 : 750, hp: 250, energy: 0 };
         socket.emit('assigned-role', { role: role });
 
+        console.log(`ห้อง ${roomId} -> P1: ${room.p1 ? 'มีแล้ว' : 'ว่าง'}, P2: ${room.p2 ? 'มีแล้ว' : 'ว่าง'}`);
+
+        // ถ้ามีผู้เล่นครบ 2 คนแล้ว เริ่มนับถอยหลังเข้าเกมพร้อมกันทันที
         if (room.p1 && room.p2) {
+            console.log(`เริ่มเกมในห้อง: ${roomId}`);
             io.to(roomId).emit('start-countdown');
         }
     });
