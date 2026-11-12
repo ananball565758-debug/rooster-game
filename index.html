@@ -158,10 +158,10 @@
     <script>
         const socket = io();
         let currentRoom = '';
-        let myRole = ''; 
+        let myRole = 'p1'; 
         let gameMode = 'online';
         let botDifficulty = 'easy';
-        let isMatchReady = false;
+        let isMatchReady = true; // ปลดล็อกให้เกมรันขยับตัวได้ทันที
 
         function setGameMode(mode) {
             gameMode = mode;
@@ -398,10 +398,9 @@
                     this.runAIBot(opponent);
                 }
 
-                // โหมดออนไลน์: ควบคุมเฉพาะตัวละครของตัวเอง ส่วนตัวอื่นใช้วิธี lerp นุ่มนวล
                 if (gameMode === 'online' && this.id !== myRole) {
-                    this.x += (this.targetX - this.x) * 0.2;
-                    this.y += (this.targetY - this.y) * 0.2;
+                    this.x += (this.targetX - this.x) * 0.3;
+                    this.y += (this.targetY - this.y) * 0.3;
                 } else {
                     if (this.hitStun > 0) {
                         this.hitStun--;
@@ -432,7 +431,6 @@
 
                 if (this.attackCooldown > 0) {
                     this.attackCooldown--;
-                    // แก้ไขจุดบล็อก: ให้ฝั่งตัวเองหรือโหมด PVE เป็นคนเช็กดาเมจเท่านั้น ป้องกันดาเมจเบิ้ลซ้ำซ้อน
                     if (this.isAttacking && !this.hasHitOpponent && (gameMode === 'pve' || this.id === myRole)) {
                         this.executeHitCheck(opponent);
                     }
@@ -579,7 +577,6 @@
                         if (!isUlt) {
                             this.gainEnergy(25);
                         }
-                        // ส่งคำสั่งโจมตีออนไลน์ไปบอก Server ครั้งเดียวจบ ป้องกันเลือดเด้งซ้ำ
                         socket.emit('player-attack', {
                             roomId: currentRoom,
                             attackType: this.attackType,
@@ -819,7 +816,6 @@
                 let data = serverPlayers[socketId];
                 let target = (data.role === 'p1') ? p1 : p2;
                 
-                // อัปเดตเฉพาะฝั่งตรงข้าม ป้องกันตำแหน่งฝั่งตัวเองกระตุก
                 if (target.id !== myRole) {
                     target.targetX = data.x;
                     target.targetY = data.y;
@@ -840,10 +836,7 @@
         socket.on('apply-hit', (data) => {
             if (gameMode !== 'online') return;
             let target = (data.targetRole === 'p1') ? p1 : p2;
-            // เช็กป้องกันการหักเลือดเบิ้ลซ้ำ
-            if (target.hp > 0) {
-                target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, null, data.isUltimate, false);
-            }
+            target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, null, data.isUltimate, false);
         });
 
         socket.on('show-effect', (data) => {
@@ -915,14 +908,15 @@
             }
 
             currentRoom = roomInput || 'bot-room';
-            isMatchReady = false;
+            isMatchReady = true;
 
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('gameover-overlay').classList.add('hidden');
 
             const isBotMode = (gameMode === 'pve');
-            p1 = new Rooster('p1', 200, 'red', true, false);
-            p2 = new Rooster('p2', 750, 'blue', false, isBotMode);
+            p1.x = 200; p1.y = GROUND_Y; p1.hp = 250; p1.maxHp = 250; p1.energy = 0;
+            p2.x = 750; p2.y = GROUND_Y; p2.hp = 250; p2.maxHp = 250; p2.energy = 0;
+            p2.isBot = isBotMode;
 
             updateHealthUI('p1', 250, 250);
             updateHealthUI('p2', 250, 250);
@@ -939,7 +933,6 @@
                 document.getElementById('waiting-overlay').classList.remove('hidden');
                 socket.emit('join-room', currentRoom);
             } else {
-                isMatchReady = true;
                 startTimer();
                 document.getElementById('my-role-badge').innerText = "🎮 เล่นกับ AI (P1)";
             }
@@ -982,7 +975,7 @@
         function returnToHome() {
             clearInterval(timerId);
             gameState = 'MENU';
-            isMatchReady = false;
+            isMatchReady = true;
             document.getElementById('waiting-overlay').classList.add('hidden');
             document.getElementById('countdown-overlay').classList.add('hidden');
             document.getElementById('gameover-overlay').classList.add('hidden');
@@ -1045,7 +1038,7 @@
             });
 
             floatTexts.forEach((txt, idx) => {
-                txt.update(); txt.draw(txt); // แก้ไขให้ส่ง ctx เสมอ
+                txt.update(); txt.draw(ctx);
                 if (txt.life <= 0) floatTexts.splice(idx, 1);
             });
 
