@@ -571,7 +571,7 @@
                 ) {
                     this.hasHitOpponent = true;
                     const isUlt = (this.attackType === 'ultimate');
-                    let dmg = isUlt ? 40 : (this.attackType === 'jumpkick' ? 9 : 5);
+                    let dmg = isUlt ? 85 : (this.attackType === 'jumpkick' ? 18 : 10);
 
                     if (gameMode === 'online') {
                         if (!isUlt) {
@@ -730,8 +730,6 @@
 
         let p1 = new Rooster('p1', 200, 'red', true, false);
         let p2 = new Rooster('p2', 750, 'blue', false, false);
-        p1.hp = 250; p1.maxHp = 250;
-        p2.hp = 250; p2.maxHp = 250;
 
         function drawArena() {
             const skyGrad = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
@@ -758,7 +756,7 @@
             dirtGrad.addColorStop(0.3, '#92400e');
             dirtGrad.addColorStop(1, '#451a03');
             ctx.fillStyle = dirtGrad;
-            dirtGrad.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
+            ctx.fillRect(0, GROUND_Y, CANVAS_W, CANVAS_H - GROUND_Y);
 
             ctx.fillStyle = '#92400e';
             ctx.fillRect(20, GROUND_Y - 170, 24, 170);
@@ -828,7 +826,6 @@
                     target.attackType = data.attackType;
                 }
                 target.hp = data.hp;
-                target.maxHp = 250; // บังคับให้ maxHp เป็น 250 เสมอ
                 target.energy = data.energy;
 
                 updateHealthUI(target.id, target.hp, target.maxHp);
@@ -878,7 +875,6 @@
                         x: me.x,
                         y: me.y,
                         hp: me.hp,
-                        maxHp: me.maxHp,
                         energy: me.energy,
                         facingRight: me.facingRight,
                         isBlocking: me.isBlocking,
@@ -920,8 +916,6 @@
             const isBotMode = (gameMode === 'pve');
             p1 = new Rooster('p1', 200, 'red', true, false);
             p2 = new Rooster('p2', 750, 'blue', false, isBotMode);
-            p1.hp = 250; p1.maxHp = 250;
-            p2.hp = 250; p2.maxHp = 250;
 
             updateHealthUI('p1', 250, 250);
             updateHealthUI('p2', 250, 250);
