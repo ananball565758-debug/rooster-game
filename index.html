@@ -574,14 +574,10 @@
                     let dmg = isUlt ? 40 : (this.attackType === 'jumpkick' ? 9 : 5);
 
                     if (gameMode === 'online') {
-                        if (!isUlt) {
-                            this.gainEnergy(25);
-                        }
+                        // ⭐ โหมดออนไลน์ ส่งแค่สัญญาณไปให้ Server จัดการคำนวณ ห้ามคำนวณเองฝั่ง Client
                         socket.emit('player-attack', {
                             roomId: currentRoom,
                             attackType: this.attackType,
-                            damage: dmg,
-                            attackerEnergy: this.energy,
                             targetRole: opponent.id
                         });
                     } else {
@@ -851,7 +847,6 @@
             returnToHome();
         });
 
-        // ⭐ รับเวลาที่ตรงกันจาก Server กลาง (แก้ปัญหาเวลาเหลื่อมกัน 1 วิ)
         socket.on('update-timer', (timeLeft) => {
             matchTimer = timeLeft;
             document.getElementById('timer').innerText = matchTimer;
@@ -951,7 +946,6 @@
                 socket.emit('join-room', currentRoom);
             } else {
                 isMatchReady = true;
-                // โหมด PvE ให้รัน Timer ฝั่ง Client ปกติ
                 startTimerPvE();
                 document.getElementById('my-role-badge').innerText = "🎮 เล่นกับ AI (P1)";
             }
