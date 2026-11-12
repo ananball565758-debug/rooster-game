@@ -1,112 +1,76 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
 
-app.use(express.static(__dirname));
+const PORT = process.env.PORT || 3000;
 
-let rooms = {};
+// เสิร์ฟไฟล์ Static จากโฟลเดอร์ปัจจุบัน (เพื่อให้โหลดหน้า index.html และไฟล์เกมได้)
+app.use(express.static(path.join(__dirname)));
+
+// เส้นทางหลักสำหรับเข้าเกม
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// เก็บข้อมูลห้องและผู้เล่น
+const rooms = {};
 
 io.on('connection', (socket) => {
-    console.log('มีผู้เล่นเชื่อมต่อเข้ามา:', socket.id);
+    console.log(`User connected: ${socket.id}`);
 
+    // ผู้เล่นสร้างหรือเข้าร่วมห้อง
     socket.on('join-room', (roomId) => {
-        socket.join(roomId);
         if (!rooms[roomId]) {
-            rooms[roomId] = { players: {}, gameStarted: false };
+            rooms[roomId] = { players: [] };
         }
 
-        let room = rooms[roomId];
-        let existingIds = Object.keys(room.players);
+        const room = rooms[roomId];
 
-        if (existingIds.length >= 2) {
+        if (room.players.length < 2) {
+            room.players.push(socket.id);
+            socket.join(roomId);
+            
+            const role = room.players.length === 1 ? 'p1' : 'p2';
+            socket.emit('assigned-role', { role, roomId });
+
+            console.log(`Player ${socket.id} joined room ${roomId} as ${role}`);
+
+            // ถ้าห้องเต็ม (ครบ 2 คน) แจ้งเริ่มเกม
+            if (room.players.length === 2) {
+                io.to(roomId).delay = setTimeout(() => {
+                    io.to(roomId).emit('start-match');
+                }, 1000);
+            }
+        } else {
             socket.emit('room-full');
-            return;
-        }
-
-        let role = existingIds.length === 0 ? 'p1' : 'p2';
-        
-        room.players[socket.id] = { 
-            id: socket.id,
-            role: role, 
-            x: role === 'p1' ? 200 : 750, 
-            y: 460, 
-            hp: 250, 
-            maxHp: 250,
-            energy: 0,
-            facingRight: role === 'p1',
-            isBlocking: false,
-            isAttacking: false,
-            isUltimate: false,
-            attackType: null
-        };
-
-        socket.emit('assigned-role', { role, roomId });
-        io.to(roomId).emit('update-players', room.players);
-
-        if (Object.keys(room.players).length === 2 && !room.gameStarted) {
-            room.gameStarted = true;
-            io.to(roomId).emit('start-countdown');
         }
     });
 
+    // รับข้อมูลการเคลื่อนไหวหรือการโจมตี แล้วส่งต่อให้อีกฝ่ายในห้อง
     socket.on('player-action', (data) => {
-        let roomId = data.roomId;
-        if (rooms[roomId] && rooms[roomId].players[socket.id]) {
-            let p = rooms[roomId].players[socket.id];
-            p.x = data.x;
-            p.y = data.y;
-            p.facingRight = data.facingRight;
-            p.isBlocking = data.isBlocking;
-            p.isAttacking = data.isAttacking;
-            p.isUltimate = data.isUltimate;
-            p.attackType = data.attackType;
-
-            socket.to(roomId).emit('update-players', rooms[roomId].players);
-        }
+        socket.to(data.roomId).emit('opponent-action', data);
     });
 
-    socket.on('player-attack', (data) => {
-        let roomId = data.roomId;
-        if (!rooms[roomId]) return;
-        
-        let room = rooms[roomId];
-        let attacker = room.players[socket.id];
-        if (!attacker) return;
-
-        let opponentSocketId = Object.keys(room.players).find(id => id !== socket.id);
-        if (!opponentSocketId) return;
-        let opponent = room.players[opponentSocketId];
-
-        let damage = data.damage || (data.attackType === 'ultimate' ? 75 : (data.attackType === 'jumpkick' ? 18 : 10));
-        let isUlt = (data.attackType === 'ultimate');
-
-        opponent.hp = Math.max(0, opponent.hp - damage);
-        attacker.energy = Math.min(100, attacker.energy + (isUlt ? 0 : 18));
-
-        io.to(roomId).emit('apply-hit', {
-            targetRole: opponent.role,
-            damage: damage,
-            isUltimate: isUlt,
-            x: opponent.x,
-            y: opponent.y
-        });
-        io.to(roomId).emit('update-players', room.players);
-    });
-
+    // จัดการเมื่อผู้เล่นหลุดการเชื่อมต่อหรือออกจากห้อง
     socket.on('disconnect', () => {
-        console.log('ผู้เล่นออกจากการเชื่อมต่อ:', socket.id);
-        for (let roomId in rooms) {
-            let room = rooms[roomId];
-            if (room.players[socket.id]) {
-                delete room.players[socket.id];
-                room.gameStarted = false;
-                io.to(roomId).emit('update-players', room.players);
+        console.log(`User disconnected: ${socket.id}`);
+        for (const roomId in rooms) {
+            const room = rooms[roomId];
+            const index = room.players.indexOf(socket.id);
+            if (index !== -1) {
+                room.players.splice(index, 1);
                 io.to(roomId).emit('opponent-disconnected');
-                if (Object.keys(room.players).length === 0) {
+                if (room.players.length === 0) {
                     delete rooms[roomId];
                 }
                 break;
@@ -115,7 +79,6 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`เซิร์ฟเวอร์เกมออนไลน์กำลังทำงานที่พอร์ต: ${PORT}`);
+    console.log(`Rooster Fight Arena Server is running on port ${PORT}`);
 });
