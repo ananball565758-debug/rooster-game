@@ -399,9 +399,8 @@
                 }
 
                 if (gameMode === 'online' && this.id !== myRole) {
-                    // ปรับความเนียน (Lerp) ให้ตัวละครลื่นไหล ไม่กระตุก
-                    this.x += (this.targetX - this.x) * 0.25;
-                    this.y += (this.targetY - this.y) * 0.25;
+                    this.x += (this.targetX - this.x) * 0.3;
+                    this.y += (this.targetY - this.y) * 0.3;
                 } else {
                     if (this.hitStun > 0) {
                         this.hitStun--;
@@ -432,7 +431,6 @@
 
                 if (this.attackCooldown > 0) {
                     this.attackCooldown--;
-                    // เช็กดาเมจเฉพาะฝั่งผู้โจมตีและโหมด PVE เท่านั้น
                     if (this.isAttacking && !this.hasHitOpponent && (gameMode === 'pve' || this.id === myRole)) {
                         this.executeHitCheck(opponent);
                     }
@@ -532,23 +530,28 @@
             triggerUltimate(opponent) {
                 if (this.energy < 100 || this.attackCooldown > 0 || this.hitStun > 0 || this.isUltimate) return;
 
-                this.energy = 0;
-                updateEnergyUI(this.id, 0);
-
-                this.isUltimate = true;
-                this.isAttacking = true;
-                this.attackType = 'ultimate';
-                this.attackCooldown = 50;
-                this.hasHitOpponent = false;
-
-                audio.playUlt();
-                screenShake = 30;
-
-                const dashDir = this.facingRight ? 1 : -1;
-                this.vx = dashDir * 25;
-                this.vy = -8;
-
-                floatTexts.push(new FloatingText(this.x, this.y - 110, '⚡ พายุเดือยทองเพลิงสะท้านภพ ⚡', '#00ffff', 34));
+                // ส่งสัญญาณเปิดใช้ไม้ตายให้ Server จัดการ
+                if (gameMode === 'online') {
+                    socket.emit('player-attack', {
+                        roomId: currentRoom,
+                        attackType: 'ultimate',
+                        targetRole: opponent.id
+                    });
+                } else {
+                    this.energy = 0;
+                    updateEnergyUI(this.id, 0);
+                    this.isUltimate = true;
+                    this.isAttacking = true;
+                    this.attackType = 'ultimate';
+                    this.attackCooldown = 50;
+                    this.hasHitOpponent = false;
+                    audio.playUlt();
+                    screenShake = 30;
+                    const dashDir = this.facingRight ? 1 : -1;
+                    this.vx = dashDir * 25;
+                    this.vy = -8;
+                    floatTexts.push(new FloatingText(this.x, this.y - 110, '⚡ พายุเดือยทองเพลิงสะท้านภพ ⚡', '#00ffff', 34));
+                }
             }
 
             executeHitCheck(opponent) {
@@ -576,7 +579,6 @@
                     let dmg = isUlt ? 40 : (this.attackType === 'jumpkick' ? 9 : 5);
 
                     if (gameMode === 'online') {
-                        // ส่งสัญญาณให้ Server ตัดสินใจคำนวณดาเมจแต่เพียงผู้เดียว
                         socket.emit('player-attack', {
                             roomId: currentRoom,
                             attackType: this.attackType,
@@ -810,7 +812,7 @@
             }
         });
 
-        // อัปเดตข้อมูลตัวละครและสถานะจาก Server โดยตรง (ป้องกันการดีดกลับ)
+        // รับข้อมูลตำแหน่งเฉพาะตัวฝั่งตรงข้าม
         socket.on('update-players', (serverPlayers) => {
             if (gameMode !== 'online') return;
             for (let socketId in serverPlayers) {
@@ -826,23 +828,24 @@
                     target.isUltimate = data.isUltimate;
                     target.attackType = data.attackType;
                 }
-                target.hp = data.hp;
-                target.maxHp = 250;
-                target.energy = data.energy;
-
-                updateHealthUI(target.id, target.hp, target.maxHp);
-                updateEnergyUI(target.id, target.energy);
             }
         });
 
+        // รับคำสั่งหักเลือดและอัปเดตเกจจาก Server โดยตรง (รับประกันว่าตรงกันแน่นอน)
         socket.on('apply-hit', (data) => {
             if (gameMode !== 'online') return;
             let target = (data.targetRole === 'p1') ? p1 : p2;
-            target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, null, data.isUltimate, false);
-        });
+            let attacker = (data.targetRole === 'p1') ? p2 : p1;
 
-        socket.on('show-effect', (data) => {
-            floatTexts.push(new FloatingText(data.x, data.y - 50, `-${data.damage}`, data.isUltimate ? '#00e5ff' : '#ffeb3b', 24));
+            target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, null, data.isUltimate, false);
+            target.hp = data.targetHp;
+            updateHealthUI(target.id, target.hp, target.maxHp);
+
+            // อัปเดตเกจ SP ของผู้โจมตี
+            if (myRole === attacker.id) {
+                attacker.energy = data.attackerEnergy;
+                updateEnergyUI(attacker.id, attacker.energy);
+            }
         });
 
         socket.on('room-full', () => {
@@ -853,9 +856,7 @@
         socket.on('update-timer', (timeLeft) => {
             matchTimer = timeLeft;
             document.getElementById('timer').innerText = matchTimer;
-            if (matchTimer <= 0) {
-                endGame();
-            }
+            if (matchTimer <= 0) endGame();
         });
 
         socket.on('time-up', () => {
@@ -883,7 +884,8 @@
                 }
 
                 let now = Date.now();
-                if (now - lastSendTime > 20) {
+                // ส่งข้อมูลตำแหน่งทุกๆ 30ms เพื่อไม่ให้ข้อมูลอัดแน่นจนเกิดดีเลย์หน่วง
+                if (now - lastSendTime > 30) {
                     socket.emit('player-action', {
                         roomId: currentRoom,
                         x: me.x,

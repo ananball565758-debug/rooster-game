@@ -65,6 +65,7 @@ io.on('connection', (socket) => {
         }
     });
 
+    // รับตำแหน่งและการเคลื่อนไหวทั่วไป (ไม่รวม HP เพื่อไม่ให้ค่าตีกัน)
     socket.on('player-action', (data) => {
         let room = rooms[data.roomId];
         if (room && room.players[socket.id]) {
@@ -76,12 +77,12 @@ io.on('connection', (socket) => {
             p.isAttacking = data.isAttacking;
             p.isUltimate = data.isUltimate;
             p.attackType = data.attackType;
-            // คงค่า hp และ energy ของเซิร์ฟเวอร์ไว้ ไม่ให้ฝั่ง Client ดีดทับเอง
-            
+
             socket.to(data.roomId).emit('update-players', room.players);
         }
     });
 
+    // จัดการดาเมจที่ Server กลาง เพื่อป้องกันเลือดเด้ง
     socket.on('player-attack', (data) => {
         let room = rooms[data.roomId];
         if (room && room.players[socket.id]) {
@@ -91,7 +92,6 @@ io.on('connection', (socket) => {
 
             if (!target) return;
 
-            // คำนวณพลังและเลือดที่ Server เท่านั้น
             if (data.attackType !== 'ultimate') {
                 attacker.energy = Math.min(100, (attacker.energy || 0) + 25);
             } else {
@@ -103,13 +103,14 @@ io.on('connection', (socket) => {
 
             let targetRole = (socket.id === room.p1) ? 'p2' : 'p1';
             
+            // ส่งคำสั่งให้ทุกจอหักเลือดพร้อมกันทันทีแบบเป๊ะๆ
             io.to(data.roomId).emit('apply-hit', { 
                 targetRole: targetRole, 
-                damage: dmg, 
+                damage: dmg,
+                attackerEnergy: attacker.energy,
+                targetHp: target.hp,
                 isUltimate: data.attackType === 'ultimate' 
             });
-
-            io.to(data.roomId).emit('update-players', room.players);
         }
     });
 
