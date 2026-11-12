@@ -525,7 +525,6 @@
                     audio.playPeck();
                 }
 
-                // ส่งสัญญาณบอก Server ให้คำนวณดาเมจส่วนกลางทันทีในโหมดออนไลน์
                 if (gameMode === 'online' && this.id === myRole) {
                     socket.emit('player-attack', {
                         roomId: currentRoom,
@@ -560,7 +559,7 @@
             }
 
             executeHitCheck(opponent) {
-                // ข้ามการเช็กฮิตบ็อกซ์ฝั่งเครื่องตัวเองในโหมดออนไลน์ ให้ Server จัดการแทน 100%
+                // 🛑 ปิดการเช็กฮิตบ็อกซ์ฝั่งเครื่องผู้เล่นในโหมดออนไลน์ทันที 100% ให้ Server จัดการคนเดียว
                 if (gameMode === 'online') return;
 
                 // สำหรับโหมดเล่นกับบอท (PvE) ใช้เช็กปกติ
@@ -827,7 +826,6 @@
             }
         });
 
-        // รับผลการหักเลือดและเกจจาก Server โดยตรง (รับประกันตรงกันทั้งสองฝั่ง)
         socket.on('apply-hit', (data) => {
             if (gameMode !== 'online') return;
             let target = (data.targetRole === 'p1') ? p1 : p2;
@@ -1011,7 +1009,7 @@
                 sub.innerText = 'ฝีมือสูสีไม่มีใครยอมใคร!';
             }
 
-            document.getElementById('gameover-overlay').classList.add('hidden');
+            document.getElementById('gameover-overlay').classList.remove('hidden');
         }
 
         function gameLoop() {
