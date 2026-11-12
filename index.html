@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Rooster Fight Arena - Ultimate Gauge Edition</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;600;800;900&display=swap" rel="stylesheet">
@@ -13,6 +13,9 @@
             -webkit-user-select: none;
             touch-action: manipulation;
             overflow: hidden;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
         }
         .text-stroke-2 { -webkit-text-stroke: 2px #000; }
         .text-stroke-1 { -webkit-text-stroke: 1px #000; }
@@ -20,12 +23,12 @@
             touch-action: none;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
-            box-shadow: 0px 6px 0px rgba(0, 0, 0, 0.4);
+            box-shadow: 0px 4px 0px rgba(0, 0, 0, 0.4);
             transition: transform 0.05s ease, box-shadow 0.05s ease;
         }
         .btn-touch:active {
-            transform: translateY(4px);
-            box-shadow: 0px 2px 0px rgba(0, 0, 0, 0.4);
+            transform: translateY(3px);
+            box-shadow: 0px 1px 0px rgba(0, 0, 0, 0.4);
         }
         .ult-ready {
             animation: pulse-glow 0.8s infinite alternate;
@@ -36,121 +39,119 @@
         }
     </style>
 </head>
-<body class="bg-slate-950 text-white h-screen w-screen flex flex-col justify-between items-center p-1 sm:p-3 overflow-hidden select-none">
+<body class="bg-slate-950 text-white h-screen w-screen flex flex-col justify-between items-center p-1 sm:p-2 overflow-hidden select-none">
 
     <!-- LOBBY SCREEN -->
-    <div id="lobby-screen" class="absolute inset-0 bg-slate-950/98 flex flex-col items-center justify-center p-4 text-center z-50">
-        <div class="bg-slate-900 border-4 border-amber-500/80 p-6 sm:p-8 rounded-3xl shadow-2xl max-w-md w-full flex flex-col gap-4">
-            <h1 class="text-3xl sm:text-4xl font-black text-amber-400 tracking-wider text-stroke-2">🐓 ROOSTER ARENA 🐓</h1>
-            <p class="text-xs sm:text-sm text-slate-300">โจมตีคู่ต่อสู้เพื่อสะสมเกจ SP ปลดล็อกท่าไม้ตายเดือยทองเพลิง!</p>
+    <div id="lobby-screen" class="absolute inset-0 bg-slate-950/98 flex flex-col items-center justify-center p-3 text-center z-50">
+        <div class="bg-slate-900 border-3 border-amber-500/80 p-4 sm:p-6 rounded-2xl shadow-2xl max-w-sm w-full flex flex-col gap-3">
+            <h1 class="text-2xl sm:text-3xl font-black text-amber-400 tracking-wider text-stroke-2">🐓 ROOSTER ARENA 🐓</h1>
+            <p class="text-[11px] sm:text-xs text-slate-300">โจมตีคู่ต่อสู้เพื่อสะสมเกจ SP ปลดล็อกไม้ตายเดือยทองเพลิง!</p>
 
             <div class="flex gap-2 justify-center">
-                <button id="btn-mode-online" onclick="setGameMode('online')" class="px-4 py-2 bg-red-600 text-white font-black text-xs sm:text-sm rounded-xl border-2 border-yellow-300 shadow-lg cursor-pointer scale-105">
-                    🌐 ห้องออนไลน์ (Online)
+                <button id="btn-mode-online" onclick="setGameMode('online')" class="px-3 py-1.5 bg-red-600 text-white font-black text-xs rounded-xl border-2 border-yellow-300 shadow cursor-pointer scale-105">
+                    🌐 ออนไลน์
                 </button>
-                <button id="btn-mode-pve" onclick="setGameMode('pve')" class="px-4 py-2 bg-slate-800 text-slate-400 font-black text-xs sm:text-sm rounded-xl border-2 border-slate-700 shadow cursor-pointer">
-                    🤖 เล่นกับบอท (vs AI)
+                <button id="btn-mode-pve" onclick="setGameMode('pve')" class="px-3 py-1.5 bg-slate-800 text-slate-400 font-black text-xs rounded-xl border-2 border-slate-700 shadow cursor-pointer">
+                    🤖 เล่นกับบอท
                 </button>
             </div>
 
-            <div id="room-input-container" class="flex flex-col gap-2">
-                <input type="text" id="room-input" placeholder="ใส่รหัสห้อง (เช่น room123)" class="bg-slate-950 border-2 border-amber-600/50 rounded-xl px-4 py-3 text-center text-xl font-bold text-amber-300 focus:outline-none focus:border-amber-400 shadow-inner">
+            <div id="room-input-container" class="flex flex-col gap-1">
+                <input type="text" id="room-input" placeholder="ใส่รหัสห้อง (เช่น room123)" class="bg-slate-950 border-2 border-amber-600/50 rounded-xl px-3 py-2 text-center text-sm sm:text-base font-bold text-amber-300 focus:outline-none focus:border-amber-400 shadow-inner">
             </div>
 
-            <div id="bot-difficulty-container" class="flex flex-col items-center gap-1.5 hidden bg-slate-950 p-2.5 rounded-xl border border-indigo-500/40">
-                <span class="text-xs font-bold text-indigo-300">เลือกระดับความยาก AI:</span>
+            <div id="bot-difficulty-container" class="flex flex-col items-center gap-1 hidden bg-slate-950 p-2 rounded-xl border border-indigo-500/40">
+                <span class="text-[10px] font-bold text-indigo-300">เลือกระดับความยาก AI:</span>
                 <div class="flex gap-2">
-                    <button id="diff-easy" onclick="setDifficulty('easy')" class="px-3 py-1 bg-emerald-600 text-white font-black text-xs rounded-lg border border-white cursor-pointer shadow">🟢 ง่าย</button>
-                    <button id="diff-normal" onclick="setDifficulty('normal')" class="px-3 py-1 bg-amber-600 text-white font-black text-xs rounded-lg border border-white cursor-pointer shadow opacity-60">🟡 ปานกลาง</button>
-                    <button id="diff-hard" onclick="setDifficulty('hard')" class="px-3 py-1 bg-rose-600 text-white font-black text-xs rounded-lg border border-white cursor-pointer shadow opacity-60">🔴 ยากสุด</button>
+                    <button id="diff-easy" onclick="setDifficulty('easy')" class="px-2.5 py-1 bg-emerald-600 text-white font-black text-[11px] rounded-lg border border-white cursor-pointer shadow">🟢 ง่าย</button>
+                    <button id="diff-normal" onclick="setDifficulty('normal')" class="px-2.5 py-1 bg-amber-600 text-white font-black text-[11px] rounded-lg border border-white cursor-pointer shadow opacity-60">🟡 กลาง</button>
+                    <button id="diff-hard" onclick="setDifficulty('hard')" class="px-2.5 py-1 bg-rose-600 text-white font-black text-[11px] rounded-lg border border-white cursor-pointer shadow opacity-60">🔴 ยาก</button>
                 </div>
             </div>
 
-            <button onclick="startMatch()" class="px-8 py-3 bg-gradient-to-r from-amber-500 to-red-600 hover:from-amber-400 hover:to-red-500 text-white font-black text-lg sm:text-xl rounded-2xl border-4 border-yellow-300 shadow-xl transform active:scale-95 transition-transform cursor-pointer">
+            <button onclick="startMatch()" class="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-red-600 text-white font-black text-base rounded-xl border-2 border-yellow-300 shadow-lg active:scale-95 transition-transform cursor-pointer">
                 ⚔️ เข้าสู่สนามประลอง ⚔️
             </button>
         </div>
     </div>
 
     <!-- TOP HUD -->
-    <div class="w-full max-w-6xl bg-slate-900/90 rounded-2xl border-2 border-amber-500/50 p-2 sm:p-3 flex justify-between items-center shadow-xl z-10 gap-2">
-        <div class="flex-1 max-w-[42%] flex flex-col items-start gap-1">
-            <div class="flex justify-between w-full items-center">
-                <span id="p1-label-hud" class="text-red-400 font-black text-sm sm:text-xl tracking-wider text-stroke-1">🔴 P1 (ไก่แดง)</span>
-                <span id="p1-combo" class="text-yellow-400 font-extrabold italic text-xs sm:text-base opacity-0 transition-opacity">COMBO x0</span>
+    <div class="w-full max-w-4xl bg-slate-900/90 rounded-xl border border-amber-500/50 p-1.5 flex justify-between items-center shadow-md z-10 gap-1">
+        <div class="flex-1 max-w-[42%] flex flex-col items-start gap-0.5">
+            <div class="flex justify-between w-full items-center text-[11px] sm:text-xs">
+                <span id="p1-label-hud" class="text-red-400 font-black text-stroke-1">🔴 P1 (ไก่แดง)</span>
+                <span id="p1-combo" class="text-yellow-400 font-extrabold italic opacity-0 transition-opacity">COMBO x0</span>
             </div>
-            <div class="w-full h-5 sm:h-7 bg-slate-950 rounded-full border-2 border-red-500 overflow-hidden relative">
+            <div class="w-full h-4 bg-slate-950 rounded-full border border-red-500 overflow-hidden relative">
                 <div id="p1-hp" class="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-75 w-full"></div>
-                <span id="p1-hp-text" class="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white text-stroke-1">250 / 250</span>
+                <span id="p1-hp-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white text-stroke-1">250 / 250</span>
             </div>
-            <div class="w-full h-3 bg-slate-950 rounded-full border border-cyan-500/50 overflow-hidden relative shadow-inner">
+            <div class="w-full h-2 bg-slate-950 rounded-full border border-cyan-500/50 overflow-hidden relative shadow-inner">
                 <div id="p1-sp" class="h-full bg-gradient-to-r from-cyan-500 to-blue-400 transition-all duration-100 w-0"></div>
-                <span id="p1-sp-text" class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white text-stroke-1">SP 0%</span>
+                <span id="p1-sp-text" class="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white text-stroke-1">SP 0%</span>
             </div>
         </div>
 
-        <div class="flex flex-col items-center justify-center min-w-[70px] sm:min-w-[90px] gap-1">
-            <div id="timer" class="text-xl sm:text-3xl font-black text-amber-400 bg-slate-950 px-2.5 py-0.5 rounded-xl border-2 border-amber-500 text-stroke-1 shadow-inner">60</div>
-            <button id="btn-ingame-home" onclick="returnToHome()" class="px-2 py-0.5 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold text-[10px] sm:text-xs rounded-lg border border-amber-500/50 cursor-pointer shadow">🏠 หน้าหลัก</button>
+        <div class="flex flex-col items-center justify-center min-w-[55px] gap-0.5">
+            <div id="timer" class="text-base sm:text-xl font-black text-amber-400 bg-slate-950 px-2 py-0 rounded-lg border border-amber-500 text-stroke-1 shadow-inner">60</div>
+            <button id="btn-ingame-home" onclick="returnToHome()" class="px-1.5 py-0 bg-slate-800 text-amber-400 font-bold text-[9px] rounded border border-amber-500/50 cursor-pointer shadow">🏠 หน้าหลัก</button>
         </div>
 
-        <div class="flex-1 max-w-[42%] flex flex-col items-end gap-1">
-            <div class="flex justify-between w-full items-center">
-                <span id="p2-combo" class="text-yellow-400 font-extrabold italic text-xs sm:text-base opacity-0 transition-opacity">COMBO x0</span>
-                <span id="p2-label-hud" class="text-blue-400 font-black text-sm sm:text-xl tracking-wider text-stroke-1">🔵 P2 (ไก่ฟ้า)</span>
+        <div class="flex-1 max-w-[42%] flex flex-col items-end gap-0.5">
+            <div class="flex justify-between w-full items-center text-[11px] sm:text-xs">
+                <span id="p2-combo" class="text-yellow-400 font-extrabold italic opacity-0 transition-opacity">COMBO x0</span>
+                <span id="p2-label-hud" class="text-blue-400 font-black text-stroke-1">🔵 P2 (ไก่ฟ้า)</span>
             </div>
-            <div class="w-full h-5 sm:h-7 bg-slate-950 rounded-full border-2 border-blue-500 overflow-hidden relative flex justify-end">
+            <div class="w-full h-4 bg-slate-950 rounded-full border border-blue-500 overflow-hidden relative flex justify-end">
                 <div id="p2-hp" class="h-full bg-gradient-to-l from-blue-600 to-cyan-400 transition-all duration-75 w-full"></div>
-                <span id="p2-hp-text" class="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white text-stroke-1">250 / 250</span>
+                <span id="p2-hp-text" class="absolute inset-0 flex items-center justify-center text-[10px] font-black text-white text-stroke-1">250 / 250</span>
             </div>
-            <div class="w-full h-3 bg-slate-950 rounded-full border border-yellow-500/50 overflow-hidden relative flex justify-end shadow-inner">
+            <div class="w-full h-2 bg-slate-950 rounded-full border border-yellow-500/50 overflow-hidden relative flex justify-end shadow-inner">
                 <div id="p2-sp" class="h-full bg-gradient-to-l from-yellow-400 to-amber-500 transition-all duration-100 w-0"></div>
-                <span id="p2-sp-text" class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white text-stroke-1">SP 0%</span>
+                <span id="p2-sp-text" class="absolute inset-0 flex items-center justify-center text-[8px] font-black text-white text-stroke-1">SP 0%</span>
             </div>
         </div>
     </div>
 
     <!-- CANVAS & OVERLAYS -->
-    <div class="relative w-full max-w-6xl flex-1 my-1 bg-slate-900 rounded-2xl border-2 sm:border-4 border-amber-600/80 overflow-hidden shadow-2xl flex items-center justify-center">
+    <div class="relative w-full max-w-4xl flex-1 my-1 bg-slate-900 rounded-xl border border-amber-600/80 overflow-hidden shadow-lg flex items-center justify-center min-h-[180px] max-h-[320px]">
         <canvas id="gameCanvas" width="1024" height="576" class="w-full h-full object-contain"></canvas>
 
-        <div id="waiting-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-4 text-center z-40 hidden">
-            <h2 class="text-3xl sm:text-5xl font-black text-amber-400 mb-3 animate-pulse text-stroke-2">⏳ กำลังรอเพื่อนเข้าห้อง...</h2>
-            <p id="room-code-display" class="text-sm sm:text-lg text-slate-300 mb-6 font-semibold">รหัสห้องของคุณ: -</p>
-            <div class="w-12 h-12 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-6"></div>
-            <button onclick="returnToHome()" class="px-6 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow cursor-pointer">ยกเลิก / ออกจากห้อง</button>
+        <div id="waiting-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-3 text-center z-40 hidden">
+            <h2 class="text-xl sm:text-3xl font-black text-amber-400 mb-2 animate-pulse text-stroke-2">⏳ กำลังรอเพื่อนเข้าห้อง...</h2>
+            <p id="room-code-display" class="text-xs sm:text-sm text-slate-300 mb-4 font-semibold">รหัสห้องของคุณ: -</p>
+            <div class="w-10 h-10 border-4 border-amber-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <button onclick="returnToHome()" class="px-4 py-1.5 bg-red-600 text-white font-bold text-xs rounded-lg shadow cursor-pointer">ยกเลิกห้อง</button>
         </div>
 
-        <div id="countdown-overlay" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-4 text-center z-40 hidden">
-            <h2 id="countdown-text" class="text-6xl sm:text-9xl font-black text-amber-400 animate-bounce text-stroke-2">3</h2>
-            <p class="text-xl sm:text-3xl text-white font-bold mt-4 text-stroke-1">เตรียมตัวประลองพร้อมกัน!</p>
+        <div id="countdown-overlay" class="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-3 text-center z-40 hidden">
+            <h2 id="countdown-text" class="text-5xl sm:text-8xl font-black text-amber-400 animate-bounce text-stroke-2">3</h2>
+            <p class="text-base sm:text-xl text-white font-bold mt-2 text-stroke-1">เตรียมตัวประลองพร้อมกัน!</p>
         </div>
 
-        <div id="gameover-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-4 text-center z-30 hidden">
-            <h2 id="winner-text" class="text-3xl sm:text-6xl font-black text-amber-400 mb-2 text-stroke-2">WINNER!</h2>
-            <p id="winner-sub" class="text-sm sm:text-xl text-slate-200 mb-6 font-semibold">สุดยอดไก่ชนผู้ครองสังเวียน!</p>
-            <div class="flex gap-4">
-                <button onclick="returnToHome()" class="px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-black text-lg rounded-xl border-2 border-white shadow-lg active:scale-95 transition-transform cursor-pointer">🏠 กลับหน้า Lobby</button>
-            </div>
+        <div id="gameover-overlay" class="absolute inset-0 bg-slate-950/90 flex flex-col items-center justify-center p-3 text-center z-30 hidden">
+            <h2 id="winner-text" class="text-2xl sm:text-5xl font-black text-amber-400 mb-1 text-stroke-2">WINNER!</h2>
+            <p id="winner-sub" class="text-xs sm:text-base text-slate-200 mb-4 font-semibold">สุดยอดไก่ชนผู้ครองสังเวียน!</p>
+            <button onclick="returnToHome()" class="px-5 py-2 bg-amber-600 text-white font-black text-sm rounded-xl border border-white shadow-lg cursor-pointer">🏠 กลับหน้า Lobby</button>
         </div>
     </div>
 
     <!-- SINGLE CONTROLLER PANEL -->
-    <div id="touch-panel" class="w-full max-w-6xl bg-slate-900/95 p-3 rounded-2xl border-4 border-amber-600/60 shadow-2xl flex justify-between items-center mb-1 relative">
-        <div id="my-role-badge" class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-amber-500 text-slate-950 px-3 py-0.5 rounded-full font-black text-xs shadow-md border border-white">
+    <div id="touch-panel" class="w-full max-w-4xl bg-slate-900/95 p-2 rounded-xl border-2 border-amber-600/60 shadow-xl flex justify-between items-center mb-1 relative">
+        <div id="my-role-badge" class="absolute -top-2.5 left-1/2 transform -translate-x-1/2 bg-amber-500 text-slate-950 px-2.5 py-0.5 rounded-full font-black text-[10px] shadow border border-white">
             🎮 กำลังเชื่อมต่อ...
         </div>
 
-        <div class="flex items-center gap-2">
-            <button id="btn-left" class="btn-touch w-16 h-16 bg-slate-800 active:bg-slate-700 text-2xl font-black rounded-2xl border-2 border-slate-600 text-amber-400 shadow-lg flex items-center justify-center">⬅</button>
-            <button id="btn-right" class="btn-touch w-16 h-16 bg-slate-800 active:bg-slate-700 text-2xl font-black rounded-2xl border-2 border-slate-600 text-amber-400 shadow-lg flex items-center justify-center">➡</button>
+        <div class="flex items-center gap-1.5">
+            <button id="btn-left" class="btn-touch w-12 h-12 bg-slate-800 active:bg-slate-700 text-xl font-black rounded-xl border border-slate-600 text-amber-400 shadow flex items-center justify-center">⬅</button>
+            <button id="btn-right" class="btn-touch w-12 h-12 bg-slate-800 active:bg-slate-700 text-xl font-black rounded-xl border border-slate-600 text-amber-400 shadow flex items-center justify-center">➡</button>
         </div>
 
-        <div class="flex items-center gap-2.5">
-            <button id="btn-jump" class="btn-touch w-14 h-14 bg-amber-600 active:bg-amber-500 text-xs font-black rounded-2xl border-2 border-yellow-300 text-white shadow-lg flex items-center justify-center">⬆ โดด</button>
-            <button id="btn-block" class="btn-touch w-14 h-14 bg-slate-700 active:bg-slate-600 text-xs font-black rounded-2xl border-2 border-slate-400 text-white shadow-lg flex items-center justify-center">🛡️ การ์ด</button>
-            <button id="btn-atk" class="btn-touch w-16 h-16 bg-red-600 active:bg-red-500 text-sm font-black rounded-full border-4 border-yellow-300 text-white shadow-xl flex items-center justify-center">🥊 ตี</button>
-            <button id="btn-ult" class="btn-touch w-16 h-16 bg-slate-800 text-xs font-black rounded-full border-4 border-slate-600 text-slate-400 shadow-xl flex items-center justify-center opacity-60 pointer-events-none transition-all duration-300">⚡ ไม้ตาย</button>
+        <div class="flex items-center gap-1.5">
+            <button id="btn-jump" class="btn-touch w-11 h-11 bg-amber-600 active:bg-amber-500 text-[10px] font-black rounded-xl border border-yellow-300 text-white shadow flex items-center justify-center">⬆ โดด</button>
+            <button id="btn-block" class="btn-touch w-11 h-11 bg-slate-700 active:bg-slate-600 text-[10px] font-black rounded-xl border border-slate-400 text-white shadow flex items-center justify-center">🛡️ การ์ด</button>
+            <button id="btn-atk" class="btn-touch w-12 h-12 bg-red-600 active:bg-red-500 text-xs font-black rounded-full border-2 border-yellow-300 text-white shadow-lg flex items-center justify-center">🥊 ตี</button>
+            <button id="btn-ult" class="btn-touch w-12 h-12 bg-slate-800 text-[9px] font-black rounded-full border-2 border-slate-600 text-slate-400 shadow-lg flex items-center justify-center opacity-60 pointer-events-none transition-all">⚡ ไม้ตาย</button>
         </div>
     </div>
 
@@ -161,7 +162,7 @@
         let myRole = 'p1'; 
         let gameMode = 'online';
         let botDifficulty = 'easy';
-        let isMatchReady = true; // ปลดล็อกให้เกมรันขยับตัวได้ทันที
+        let isMatchReady = true;
 
         function setGameMode(mode) {
             gameMode = mode;
@@ -171,13 +172,13 @@
             const botDiffC = document.getElementById('bot-difficulty-container');
 
             if (mode === 'online') {
-                onlineBtn.className = "px-4 py-2 bg-red-600 text-white font-black text-xs sm:text-sm rounded-xl border-2 border-yellow-300 shadow-lg cursor-pointer scale-105";
-                pveBtn.className = "px-4 py-2 bg-slate-800 text-slate-400 font-black text-xs sm:text-sm rounded-xl border-2 border-slate-700 shadow cursor-pointer";
+                onlineBtn.className = "px-3 py-1.5 bg-red-600 text-white font-black text-xs rounded-xl border-2 border-yellow-300 shadow cursor-pointer scale-105";
+                pveBtn.className = "px-3 py-1.5 bg-slate-800 text-slate-400 font-black text-xs rounded-xl border-2 border-slate-700 shadow cursor-pointer";
                 roomInputC.classList.remove('hidden');
                 botDiffC.classList.add('hidden');
             } else {
-                pveBtn.className = "px-4 py-2 bg-indigo-600 text-white font-black text-xs sm:text-sm rounded-xl border-2 border-yellow-300 shadow-lg cursor-pointer scale-105";
-                onlineBtn.className = "px-4 py-2 bg-slate-800 text-slate-400 font-black text-xs sm:text-sm rounded-xl border-2 border-slate-700 shadow cursor-pointer";
+                pveBtn.className = "px-3 py-1.5 bg-indigo-600 text-white font-black text-xs rounded-xl border-2 border-yellow-300 shadow cursor-pointer scale-105";
+                onlineBtn.className = "px-3 py-1.5 bg-slate-800 text-slate-400 font-black text-xs rounded-xl border-2 border-slate-700 shadow cursor-pointer";
                 roomInputC.classList.add('hidden');
                 botDiffC.classList.remove('hidden');
             }
@@ -803,10 +804,10 @@
             const badge = document.getElementById('my-role-badge');
             if (myRole === 'p1') {
                 badge.innerText = "🎮 คุณคือ P1 (ไก่แดง)";
-                badge.className = "absolute -top-3 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-4 py-0.5 rounded-full font-black text-xs shadow-md border border-white animate-pulse";
+                badge.className = "absolute -top-2.5 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-2.5 py-0.5 rounded-full font-black text-[10px] shadow border border-white animate-pulse";
             } else {
                 badge.innerText = "🎮 คุณคือ P2 (ไก่ฟ้า)";
-                badge.className = "absolute -top-3 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-4 py-0.5 rounded-full font-black text-xs shadow-md border border-white animate-pulse";
+                badge.className = "absolute -top-2.5 left-1/2 transform -translate-x-1/2 bg-blue-600 text-white px-2.5 py-0.5 rounded-full font-black text-[10px] shadow border border-white animate-pulse";
             }
         });
 
@@ -992,15 +993,15 @@
 
             if (p1.hp > p2.hp) {
                 title.innerText = '🔴 P1 (ไก่แดง) WIN!';
-                title.className = 'text-3xl sm:text-6xl font-black text-red-500 mb-2 text-stroke-2';
+                title.className = 'text-2xl sm:text-5xl font-black text-red-500 mb-1 text-stroke-2';
                 sub.innerText = 'สุดยอดฝีมือครองแชมป์สังเวียน!';
             } else if (p2.hp > p1.hp) {
                 title.innerText = gameMode === 'pve' ? '🤖 AI BOT WIN!' : '🔵 P2 (ไก่ฟ้า) WIN!';
-                title.className = 'text-3xl sm:text-6xl font-black text-blue-500 mb-2 text-stroke-2';
+                title.className = 'text-2xl sm:text-5xl font-black text-blue-500 mb-1 text-stroke-2';
                 sub.innerText = gameMode === 'pve' ? 'บอทคอมพิวเตอร์เฉียบคมกว่า ลองใหม่อีกครั้ง!' : 'ไก่ฟ้าคว้าชัยเหนือสังเวียน!';
             } else {
                 title.innerText = '🤝 เสมอกัน! (DRAW)';
-                title.className = 'text-3xl sm:text-6xl font-black text-amber-400 mb-2 text-stroke-2';
+                title.className = 'text-2xl sm:text-5xl font-black text-amber-400 mb-1 text-stroke-2';
                 sub.innerText = 'ฝีมือสูสีไม่มีใครยอมใคร!';
             }
 
