@@ -22,7 +22,7 @@ io.on('connection', (socket) => {
         socket.join(roomId);
         
         if (!rooms[roomId]) {
-            rooms[roomId] = { p1: null, p2: null, players: {}, timeLeft: 60, timer: null };
+            rooms[roomId] = { p1: null, p2: null, timeLeft: 60, timer: null };
         }
 
         let room = rooms[roomId];
@@ -38,18 +38,6 @@ io.on('connection', (socket) => {
             socket.emit('room-full');
             return;
         }
-
-        // กำหนดสถานะเลือดและพิกัดเริ่มต้นบน Server ตรงนี้ที่เดียว
-        room.players[socket.id] = { 
-            role: role, 
-            x: role === 'p1' ? 200 : 750, 
-            y: 460, 
-            hp: 250, 
-            maxHp: 250, 
-            energy: 0,
-            facingRight: role === 'p1' ? true : false,
-            lastAtk: 0
-        };
         
         socket.emit('assigned-role', { role: role });
 
@@ -76,66 +64,14 @@ io.on('connection', (socket) => {
         }
     });
 
-    // รับตำแหน่งการเดินธรรมดา (ไม่ยุ่งกับเลือด)
-    socket.on('player-action', (data) => {
-        let room = rooms[data.roomId];
-        if (room && room.players[socket.id]) {
-            let p = room.players[socket.id];
-            p.x = data.x;
-            p.y = data.y;
-            p.facingRight = data.facingRight;
-            p.isBlocking = data.isBlocking;
-            p.isAttacking = data.isAttacking;
-            p.isUltimate = data.isUltimate;
-            p.attackType = data.attackType;
-
-            socket.to(data.roomId).emit('update-players', room.players);
-        }
+    // ให้ P1 เป็นศูนย์กลางรับส่งข้อมูลการเคลื่อนไหวและเลือด
+    socket.on('p1-sync-data', (data) => {
+        socket.to(data.roomId).emit('sync-from-p1', data);
     });
 
-    // ⭐ Server เป็นคนกลางคำนวณการตีและหักเลือดจริงแบบแม่นยำที่สุด
-    socket.on('player-attack', (data) => {
-        let room = rooms[data.roomId];
-        if (!room) return;
-
-        let attackerSocketId = socket.id;
-        let targetSocketId = (attackerSocketId === room.p1) ? room.p2 : room.p1;
-        
-        let attacker = room.players[attackerSocketId];
-        let target = room.players[targetSocketId];
-
-        if (!attacker || !target) return;
-
-        // ป้องกันการรัวคำสั่งโจมตีถี่เกินไป (Cooldown 300ms)
-        let now = Date.now();
-        if (now - attacker.lastAtk < 300) return;
-        attacker.lastAtk = now;
-
-        let isUlt = data.attackType === 'ultimate';
-        let dmg = isUlt ? 40 : (data.attackType === 'jumpkick' ? 9 : 5);
-
-        // Server ตรวจสอบระยะห่าง (ให้กว้างขึ้นหน่อยเผื่อดีเลย์เน็ต: 150 พิกเซล)
-        let distance = Math.abs(attacker.x - target.x);
-        if (distance <= 160) { 
-            target.hp = Math.max(0, target.hp - dmg);
-
-            if (!isUlt) {
-                attacker.energy = Math.min(100, (attacker.energy || 0) + 25);
-            } else {
-                attacker.energy = 0;
-            }
-
-            let targetRole = (targetSocketId === room.p1) ? 'p1' : 'p2';
-
-            // ส่งค่าเลือดที่ถูกต้องที่สุดจาก Server ไปอัปเดตหน้าจอทั้งสองฝั่งพร้อมกันเป๊ะๆ
-            io.to(data.roomId).emit('apply-hit', { 
-                targetRole: targetRole, 
-                damage: dmg,
-                targetHp: target.hp,
-                attackerEnergy: attacker.energy,
-                isUltimate: isUlt 
-            });
-        }
+    // ให้ P2 ส่งข้อมูลการกระทำไปบอก P1
+    socket.on('p2-action', (data) => {
+        socket.to(data.roomId).emit('sync-p2-action', data);
     });
 
     socket.on('disconnect', () => {
