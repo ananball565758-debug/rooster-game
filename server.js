@@ -42,34 +42,30 @@ io.on('connection', (socket) => {
         socket.emit('assigned-role', { role: role });
 
         if (room.p1 && room.p2) {
-            io.to(roomId).emit('start-countdown');
+            io.to(roomId).emit('start-match-instantly');
 
-            setTimeout(() => {
-                if (rooms[roomId] && !rooms[roomId].timer) {
-                    rooms[roomId].timeLeft = 60;
-                    rooms[roomId].timer = setInterval(() => {
-                        if (rooms[roomId] && rooms[roomId].timeLeft > 0) {
-                            rooms[roomId].timeLeft--;
-                            io.to(roomId).emit('update-timer', rooms[roomId].timeLeft);
-                        } else {
-                            if (rooms[roomId] && rooms[roomId].timer) {
-                                clearInterval(rooms[roomId].timer);
-                                rooms[roomId].timer = null;
-                            }
-                            io.to(roomId).emit('time-up');
+            if (!rooms[roomId].timer) {
+                rooms[roomId].timeLeft = 60;
+                rooms[roomId].timer = setInterval(() => {
+                    if (rooms[roomId] && rooms[roomId].timeLeft > 0) {
+                        rooms[roomId].timeLeft--;
+                        io.to(roomId).emit('update-timer', rooms[roomId].timeLeft);
+                    } else {
+                        if (rooms[roomId] && rooms[roomId].timer) {
+                            clearInterval(rooms[roomId].timer);
+                            rooms[roomId].timer = null;
                         }
-                    }, 1000);
-                }
-            }, 3000);
+                        io.to(roomId).emit('time-up');
+                    }
+                }, 1000);
+            }
         }
     });
 
-    // ส่งพิกัดการเดินปกติ
     socket.on('player-action', (data) => {
         socket.to(data.roomId).emit('update-players', data);
     });
 
-    // ⭐ บังคับหักเลือดข้ามเน็ตทันทีโดย Server เป็นสะพานส่งคำสั่งให้
     socket.on('force-take-damage', (data) => {
         socket.to(data.roomId).emit('sync-damage', data);
     });
