@@ -39,7 +39,6 @@ io.on('connection', (socket) => {
             return;
         }
 
-        // กำหนดค่าเริ่มต้นของผู้เล่นแต่ละคนบน Server
         room.players[socket.id] = { 
             role: role, 
             x: role === 'p1' ? 200 : 750, 
@@ -56,12 +55,10 @@ io.on('connection', (socket) => {
 
         socket.emit('assigned-role', { role: role });
 
-        // เมื่อครบ 2 คน เริ่มเกมและจับเวลา
         if (room.p1 && room.p2) {
-            io.to(roomId).emit('start-match-instantly');
+            io.to(roomId).emit('start-countdown');
 
             if (!room.timer) {
-                room.timeLeft = 60;
                 room.timer = setInterval(() => {
                     if (room && room.timeLeft > 0) {
                         room.timeLeft--;
@@ -78,7 +75,6 @@ io.on('connection', (socket) => {
         }
     });
 
-    // รับตำแหน่งและการเคลื่อนไหวจากผู้เล่น แล้วกระจายให้อีกฝั่งเห็น
     socket.on('player-action', (data) => {
         let room = rooms[data.roomId];
         if (room && room.players[socket.id]) {
@@ -91,52 +87,42 @@ io.on('connection', (socket) => {
             p.isUltimate = data.isUltimate;
             p.attackType = data.attackType;
 
-            socket.to(data.roomId).emit('update-players', {
-                role: p.role,
-                x: p.x,
-                y: p.y,
-                facingRight: p.facingRight,
-                isBlocking: p.isBlocking,
-                isAttacking: p.isAttacking,
-                isUltimate: p.isUltimate,
-                attackType: p.attackType
-            });
+            io.to(data.roomId).emit('update-players', room.players);
         }
     });
 
-    // ให้ Server เป็นคนกลางคำนวณการหักเลือด ป้องกันเลือดเด้งไม่ตรงกัน
-    socket.on('request-damage', (data) => {
+    // เพิ่มฟังก์ชันรองรับการโจมตีจากผู้เล่น เพื่อคำนวณ HP และ SP บน Server กลาง
+    socket.on('player-attack', (data) => {
         let room = rooms[data.roomId];
         if (!room) return;
 
         let targetSocketId = (data.targetRole === 'p1') ? room.p1 : room.p2;
-        let attackerSocketId = (data.targetRole === 'p1') ? room.p2 : room.p1;
+        let attackerSocketId = (socket.id === room.p1) ? room.p1 : room.p2;
 
         let target = room.players[targetSocketId];
         let attacker = room.players[attackerSocketId];
 
         if (target && attacker) {
-            // หักเลือดบน Server
-            target.hp = Math.max(0, target.hp - data.damage);
+            let isUlt = (data.attackType === 'ultimate');
             
-            // สะสมเกจพลัง (ถ้าไม่ใช่ท่าไม้ตาย)
-            if (!data.isUltimate) {
+            // หักเลือดเป้าหมาย
+            target.hp = Math.max(0, target.hp - data.damage);
+
+            // คำนวณเกจพลังงาน
+            if (!isUlt) {
                 attacker.energy = Math.min(100, (attacker.energy || 0) + 25);
             } else {
                 attacker.energy = 0;
             }
 
-            // ส่งผลลัพธ์เลือดและเกจที่ถูกต้องกลับไปให้ผู้เล่นทุกคนในห้องตรงกันเป๊ะๆ
-            io.to(data.roomId).emit('sync-exact-state', {
-                targetRole: target.role,
-                targetHp: target.hp,
-                attackerRole: attacker.role,
-                attackerEnergy: attacker.energy,
+            // ส่งข้อมูลอัปเดตสถานะล่าสุดให้ทุกคนในห้องตรงกัน
+            io.to(data.roomId).emit('apply-hit', {
+                targetRole: data.targetRole,
                 damage: data.damage,
-                knockback: data.knockback,
-                isUltimate: data.isUltimate,
-                isHeavy: data.isHeavy
+                isUltimate: isUlt
             });
+
+            io.to(data.roomId).emit('update-players', room.players);
         }
     });
 

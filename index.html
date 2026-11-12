@@ -753,7 +753,7 @@
 
             ctx.fillStyle = '#92400e';
             dirtGrad.fillRect(20, GROUND_Y - 170, 24, 170);
-            dirtGrad.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
+            ctx.fillRect(CANVAS_W - 44, GROUND_Y - 170, 24, 170);
         }
 
         function updateHealthUI(player, hp, maxHp) {
@@ -803,7 +803,6 @@
             }
         });
 
-        // รับข้อมูลตำแหน่ง HP และ SP ที่คำนวณจาก Server กลางเท่านั้น
         socket.on('update-players', (serverPlayers) => {
             if (gameMode !== 'online') return;
             for (let socketId in serverPlayers) {
