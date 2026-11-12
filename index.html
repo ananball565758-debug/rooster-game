@@ -80,11 +80,11 @@
                 <span id="p1-combo" class="text-yellow-400 font-extrabold italic text-xs sm:text-base opacity-0 transition-opacity">COMBO x0</span>
             </div>
             <div class="w-full h-5 sm:h-7 bg-slate-950 rounded-full border-2 border-red-500 overflow-hidden relative">
-                <div id="p1-hp" class="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-75 w-full"></div>
+                <div id="p1-hp" class="h-full bg-gradient-to-r from-red-600 to-amber-500 transition-all duration-150 w-full"></div>
                 <span id="p1-hp-text" class="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white text-stroke-1">250 / 250</span>
             </div>
             <div class="w-full h-3 bg-slate-950 rounded-full border border-cyan-500/50 overflow-hidden relative shadow-inner">
-                <div id="p1-sp" class="h-full bg-gradient-to-r from-cyan-500 to-blue-400 transition-all duration-100 w-0"></div>
+                <div id="p1-sp" class="h-full bg-gradient-to-r from-cyan-500 to-blue-400 transition-all duration-150 w-0"></div>
                 <span id="p1-sp-text" class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white text-stroke-1">SP 0%</span>
             </div>
         </div>
@@ -100,11 +100,11 @@
                 <span id="p2-label-hud" class="text-blue-400 font-black text-sm sm:text-xl tracking-wider text-stroke-1">🔵 P2 (ไก่ฟ้า)</span>
             </div>
             <div class="w-full h-5 sm:h-7 bg-slate-950 rounded-full border-2 border-blue-500 overflow-hidden relative flex justify-end">
-                <div id="p2-hp" class="h-full bg-gradient-to-l from-blue-600 to-cyan-400 transition-all duration-75 w-full"></div>
+                <div id="p2-hp" class="h-full bg-gradient-to-l from-blue-600 to-cyan-400 transition-all duration-150 w-full"></div>
                 <span id="p2-hp-text" class="absolute inset-0 flex items-center justify-center text-xs sm:text-sm font-black text-white text-stroke-1">250 / 250</span>
             </div>
             <div class="w-full h-3 bg-slate-950 rounded-full border border-yellow-500/50 overflow-hidden relative flex justify-end shadow-inner">
-                <div id="p2-sp" class="h-full bg-gradient-to-l from-yellow-400 to-amber-500 transition-all duration-100 w-0"></div>
+                <div id="p2-sp" class="h-full bg-gradient-to-l from-yellow-400 to-amber-500 transition-all duration-150 w-0"></div>
                 <span id="p2-sp-text" class="absolute inset-0 flex items-center justify-center text-[9px] font-black text-white text-stroke-1">SP 0%</span>
             </div>
         </div>
@@ -399,8 +399,9 @@
                 }
 
                 if (gameMode === 'online' && this.id !== myRole) {
-                    this.x += (this.targetX - this.x) * 0.3;
-                    this.y += (this.targetY - this.y) * 0.3;
+                    // ปรับความเนียน (Lerp) ให้ตัวละครลื่นไหล ไม่กระตุก
+                    this.x += (this.targetX - this.x) * 0.25;
+                    this.y += (this.targetY - this.y) * 0.25;
                 } else {
                     if (this.hitStun > 0) {
                         this.hitStun--;
@@ -431,6 +432,7 @@
 
                 if (this.attackCooldown > 0) {
                     this.attackCooldown--;
+                    // เช็กดาเมจเฉพาะฝั่งผู้โจมตีและโหมด PVE เท่านั้น
                     if (this.isAttacking && !this.hasHitOpponent && (gameMode === 'pve' || this.id === myRole)) {
                         this.executeHitCheck(opponent);
                     }
@@ -574,7 +576,7 @@
                     let dmg = isUlt ? 40 : (this.attackType === 'jumpkick' ? 9 : 5);
 
                     if (gameMode === 'online') {
-                        // ⭐ โหมดออนไลน์ ส่งแค่สัญญาณไปให้ Server จัดการคำนวณ ห้ามคำนวณเองฝั่ง Client
+                        // ส่งสัญญาณให้ Server ตัดสินใจคำนวณดาเมจแต่เพียงผู้เดียว
                         socket.emit('player-attack', {
                             roomId: currentRoom,
                             attackType: this.attackType,
@@ -808,6 +810,7 @@
             }
         });
 
+        // อัปเดตข้อมูลตัวละครและสถานะจาก Server โดยตรง (ป้องกันการดีดกลับ)
         socket.on('update-players', (serverPlayers) => {
             if (gameMode !== 'online') return;
             for (let socketId in serverPlayers) {
@@ -880,14 +883,11 @@
                 }
 
                 let now = Date.now();
-                if (now - lastSendTime > 25) {
+                if (now - lastSendTime > 20) {
                     socket.emit('player-action', {
                         roomId: currentRoom,
                         x: me.x,
                         y: me.y,
-                        hp: me.hp,
-                        maxHp: me.maxHp,
-                        energy: me.energy,
                         facingRight: me.facingRight,
                         isBlocking: me.isBlocking,
                         isAttacking: me.isAttacking,
