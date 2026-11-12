@@ -44,9 +44,6 @@ io.on('connection', (socket) => {
             role: role, 
             x: role === 'p1' ? 200 : 750, 
             y: 460, 
-            hp: 250, 
-            maxHp: 250, 
-            energy: 0,
             facingRight: role === 'p1' ? true : false
         };
         
@@ -75,79 +72,4 @@ io.on('connection', (socket) => {
         }
     });
 
-    // รับตำแหน่งและการกระทำ
-    socket.on('player-action', (data) => {
-        let room = rooms[data.roomId];
-        if (room && room.players[socket.id]) {
-            let p = room.players[socket.id];
-            p.x = data.x;
-            p.y = data.y;
-            p.facingRight = data.facingRight;
-            p.isBlocking = data.isBlocking;
-            p.isAttacking = data.isAttacking;
-            p.isUltimate = data.isUltimate;
-            p.attackType = data.attackType;
-
-            socket.to(data.roomId).emit('update-players', room.players);
-        }
-    });
-
-    // ⭐ ให้ Server เป็นคนคำนวณการชน (Hitbox) และหักเลือดเอง ป้องกันเลือดเด้ง
-    socket.on('player-attack', (data) => {
-        let room = rooms[data.roomId];
-        if (!room) return;
-
-        let attackerSocketId = socket.id;
-        let targetSocketId = (attackerSocketId === room.p1) ? room.p2 : room.p1;
-        
-        let attacker = room.players[attackerSocketId];
-        let target = room.players[targetSocketId];
-
-        if (!attacker || !target) return;
-
-        // คำนวณดาเมจ
-        let isUlt = data.attackType === 'ultimate';
-        let dmg = isUlt ? 40 : (data.attackType === 'jumpkick' ? 9 : 5);
-
-        // เช็กระยะห่างบน Server
-        let distance = Math.abs(attacker.x - target.x);
-        if (distance < 120) { // ระยะโจมตีถึงกัน
-            target.hp = Math.max(0, target.hp - dmg);
-
-            if (!isUlt) {
-                attacker.energy = Math.min(100, (attacker.energy || 0) + 25);
-            } else {
-                attacker.energy = 0;
-            }
-
-            let targetRole = (targetSocketId === room.p1) ? 'p1' : 'p2';
-
-            // ส่งผลลัพธ์ที่คำนวณจาก Server ไปอัปเดตหน้าจอทุกคนพร้อมกัน
-            io.to(data.roomId).emit('apply-hit', { 
-                targetRole: targetRole, 
-                damage: dmg,
-                targetHp: target.hp,
-                attackerEnergy: attacker.energy,
-                isUltimate: isUlt 
-            });
-
-            io.to(data.roomId).emit('update-players', room.players);
-        }
-    });
-
-    socket.on('disconnect', () => {
-        console.log('ผู้เล่นตัดการเชื่อมต่อ:', socket.id);
-        for (let roomId in rooms) {
-            let room = rooms[roomId];
-            if (room.p1 === socket.id || room.p2 === socket.id) {
-                if (room.timer) clearInterval(room.timer);
-                delete rooms[roomId];
-                io.to(roomId).emit('room-full');
-            }
-        }
-    });
-});
-
-server.listen(3000, () => {
-    console.log('Server เปิดใช้งานแล้วที่ http://localhost:3000');
-});
+    // รับตำแหน่งและการเคลื่อนไหวเพื่อส่งอ

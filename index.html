@@ -526,7 +526,7 @@
                 }
 
                 if (gameMode === 'online' && this.id === myRole) {
-                    socket.emit('player-attack', {
+                    socket.emit('player-attack-intent', {
                         roomId: currentRoom,
                         attackType: this.attackType
                     });
@@ -537,7 +537,7 @@
                 if (this.energy < 100 || this.attackCooldown > 0 || this.hitStun > 0 || this.isUltimate) return;
 
                 if (gameMode === 'online' && this.id === myRole) {
-                    socket.emit('player-attack', {
+                    socket.emit('player-attack-intent', {
                         roomId: currentRoom,
                         attackType: 'ultimate'
                     });
@@ -559,10 +559,7 @@
             }
 
             executeHitCheck(opponent) {
-                // 🛑 ปิดการเช็กฮิตบ็อกซ์ฝั่งเครื่องผู้เล่นในโหมดออนไลน์ทันที 100% ให้ Server จัดการคนเดียว
-                if (gameMode === 'online') return;
-
-                // สำหรับโหมดเล่นกับบอท (PvE) ใช้เช็กปกติ
+                // ⭐ เปิดให้เครื่องผู้เล่นเช็กฮิตบ็อกซ์การตีเองทั้งโหมด Offline และ Online (เหมือนตอนเล่นกับบอท)
                 let hitBox = { x: 0, y: 0, w: 0, h: 0 };
                 if (this.attackType === 'ultimate') {
                     const reachX = this.facingRight ? this.x : this.x - 140;
@@ -584,9 +581,30 @@
                     this.hasHitOpponent = true;
                     const isUlt = (this.attackType === 'ultimate');
                     let dmg = isUlt ? 40 : (this.attackType === 'jumpkick' ? 9 : 5);
-                    opponent.takeDamage(dmg, this.facingRight ? 18 : -18, this, isUlt, this.attackType === 'jumpkick' || isUlt);
-                    if (!isUlt) this.gainEnergy(25);
-                    this.registerCombo();
+
+                    if (gameMode === 'online') {
+                        // 👉 ถ้าเป็นโหมดออนไลน์ เครื่องเราตีโดนเพื่อน ส่งคำสั่งไปบอก Server ให้หักเลือดฝั่งโน้นทันที
+                        socket.emit('client-hit-registered', {
+                            roomId: currentRoom,
+                            targetId: opponent.id,
+                            damage: dmg,
+                            isUltimate: isUlt,
+                            isHeavy: this.attackType === 'jumpkick' || isUlt
+                        });
+
+                        // เพิ่ม SP และคอมโบให้ตัวเราเองฝั่งเครื่องเรา
+                        if (!isUlt) this.gainEnergy(25);
+                        else {
+                            this.energy = 0;
+                            updateEnergyUI(this.id, 0);
+                        }
+                        this.registerCombo();
+                    } else {
+                        // โหมดเล่นกับบอท
+                        opponent.takeDamage(dmg, this.facingRight ? 18 : -18, this, isUlt, this.attackType === 'jumpkick' || isUlt);
+                        if (!isUlt) this.gainEnergy(25);
+                        this.registerCombo();
+                    }
                 }
             }
 
@@ -808,45 +826,53 @@
             }
         });
 
-        // ⭐ อัปเดตพิกัด และซิงค์ค่าเลือด/เกจจาก Server เสมอ ป้องกันเลือดเด้งกลับ
+        // ⭐ รับตำแหน่งและการเคลื่อนไหวจากเพื่อน (ไม่ยุ่งกับเลือดแล้ว)
         socket.on('update-players', (serverPlayers) => {
             if (gameMode !== 'online') return;
             for (let socketId in serverPlayers) {
                 let data = serverPlayers[socketId];
                 let target = (data.role === 'p1') ? p1 : p2;
                 
-                target.targetX = data.x;
-                target.targetY = data.y;
-                target.facingRight = data.facingRight;
-                target.isBlocking = data.isBlocking;
-                target.isAttacking = data.isAttacking;
-                target.isUltimate = data.isUltimate;
-                target.attackType = data.attackType;
-
-                // ซิงค์ค่าเลือดให้ตรงกับ Server เสมอ
-                if (target.hp !== data.hp) {
-                    target.hp = data.hp;
-                    updateHealthUI(target.id, target.hp, target.maxHp);
-                }
-                // ซิงค์เกจ SP ให้ตรงกับ Server เสมอ
-                if (target.energy !== data.energy) {
-                    target.energy = data.energy;
-                    updateEnergyUI(target.id, target.energy);
+                if (target.id !== myRole) {
+                    target.targetX = data.x;
+                    target.targetY = data.y;
+                    target.facingRight = data.facingRight;
+                    target.isBlocking = data.isBlocking;
+                    target.isAttacking = data.isAttacking;
+                    target.isUltimate = data.isUltimate;
+                    target.attackType = data.attackType;
                 }
             }
         });
 
-        socket.on('apply-hit', (data) => {
+        // ⭐ รับการแสดงท่าทางโจมตีจากเพื่อนมาแสดงผล
+        socket.on('sync-attack-intent', (data) => {
+            if (gameMode !== 'online') return;
+            let attacker = (data.role === 'p1') ? p1 : p2;
+            if (attacker.id !== myRole) {
+                attacker.isAttacking = true;
+                attacker.attackType = data.attackType;
+                attacker.attackCooldown = (data.attackType === 'ultimate') ? 50 : 20;
+                if (data.attackType === 'ultimate') {
+                    audio.playUlt();
+                } else if (data.attackType === 'jumpkick') {
+                    audio.playSwoosh();
+                } else {
+                    audio.playPeck();
+                }
+            }
+        });
+
+        // ⭐ รับคำสั่งโดนตีจากเครื่องเพื่อนโดยตรง (Peer-to-Peer ผ่าน Server)
+        socket.on('sync-take-damage', (data) => {
             if (gameMode !== 'online') return;
             let target = (data.targetRole === 'p1') ? p1 : p2;
-            let attacker = (data.targetRole === 'p1') ? p2 : p1;
 
-            target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, null, data.isUltimate, false);
-            target.hp = data.targetHp;
-            updateHealthUI(target.id, target.hp, target.maxHp);
-
-            attacker.energy = data.attackerEnergy;
-            updateEnergyUI(attacker.id, attacker.energy);
+            target.takeDamage(data.damage, data.targetRole === 'p1' ? 12 : -12, null, data.isUltimate, data.isHeavy);
+            
+            if (target.hp <= 0 && gameState === 'PLAYING') {
+                endGame();
+            }
         });
 
         socket.on('room-full', () => {
@@ -890,8 +916,6 @@
                         roomId: currentRoom,
                         x: me.x,
                         y: me.y,
-                        hp: me.hp,              // ส่งค่าเลือดปัจจุบันพ่วงไปด้วย
-                        energy: me.energy,      // ส่งค่าเกจ SP ไปด้วย
                         facingRight: me.facingRight,
                         isBlocking: me.isBlocking,
                         isAttacking: me.isAttacking,
