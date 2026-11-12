@@ -161,7 +161,7 @@
         let myRole = ''; 
         let gameMode = 'online';
         let botDifficulty = 'easy';
-        let isMatchReady = false;
+        let isMatchReady = true; // ตั้งค่าเริ่มต้นให้เป็น true เพื่อให้เรนเดอร์ตัวละครทันที
 
         function setGameMode(mode) {
             gameMode = mode;
@@ -544,7 +544,6 @@
                 floatTexts.push(new FloatingText(this.x, this.y - 110, '⚡ พายุเดือยทองเพลิงสะท้านภพ ⚡', '#00ffff', 34));
             }
 
-            // ⭐ เครื่องใครเครื่องมันเช็กฮิตบ็อกซ์ แล้วบังคับลดเลือดเป้าหมายทันทีทั้งสองจอ
             executeHitCheck(opponent) {
                 if (gameMode === 'online' && this.id !== myRole) return;
 
@@ -823,7 +822,6 @@
             target.attackType = data.attackType;
         });
 
-        // ⭐ รับคำสั่งบังคับลดเลือดข้ามเครื่องทันทีแบบเบ็ดเสร็จ
         socket.on('sync-damage', (data) => {
             if (gameMode !== 'online') return;
             let target = (data.targetId === 'p1') ? p1 : p2;
@@ -907,7 +905,7 @@
             }
 
             currentRoom = roomInput || 'bot-room';
-            isMatchReady = false;
+            isMatchReady = true; // บังคับให้พร้อมแสดงผลทันที
 
             document.getElementById('lobby-screen').classList.add('hidden');
             document.getElementById('gameover-overlay').classList.add('hidden');
@@ -930,10 +928,10 @@
 
             if (gameMode === 'online') {
                 document.getElementById('room-code-display').innerText = `รหัสห้องของคุณ: ${currentRoom}`;
+                // เปิดให้เห็นจอเกมทันที ไม่ต้องรอหน้าต่างค้าง
                 document.getElementById('waiting-overlay').classList.remove('hidden');
                 socket.emit('join-room', currentRoom);
             } else {
-                isMatchReady = true;
                 startTimerPvE();
                 document.getElementById('my-role-badge').innerText = "🎮 เล่นกับ AI (P1)";
             }
@@ -976,7 +974,7 @@
         function returnToHome() {
             clearInterval(pveTimerId);
             gameState = 'MENU';
-            isMatchReady = false;
+            isMatchReady = true;
             document.getElementById('waiting-overlay').classList.add('hidden');
             document.getElementById('countdown-overlay').classList.add('hidden');
             document.getElementById('gameover-overlay').classList.add('hidden');
